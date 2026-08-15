@@ -1,0 +1,40 @@
+[
+  {
+    "id": "fraud_and_greed",
+    "query": "A person concealed important facts and took another person's money.",
+    "expected_any": ["BG3.6", "BG1.37", "BG16.21", "BG18.25"]
+  },
+  {
+    "id": "work_anxiety",
+    "query": "I am anxious about the results of my work and cannot focus on my duty.",
+    "expected_any": ["BG2.47", "BG2.48", "BG12.11"]
+  },
+  {
+    "id": "anger",
+    "query": "My anger is clouding my judgment and causing me to make bad decisions.",
+    "expected_any": ["BG2.62", "BG2.63", "BG16.21"]
+  },
+  {
+    "id": "grief_and_death",
+    "query": "I cannot accept the death of someone close to me.",
+    "expected_any": ["BG2.8", "BG2.11", "BG2.13", "BG2.20", "BG2.27"]
+  },
+  {
+    "id": "own_duty",
+    "query": "I want to abandon my responsibilities because another person's work looks easier.",
+    "expected_any": ["BG3.35", "BG18.47"]
+  },
+  {
+    "id": "uncontrolled_desire",
+    "query": "My desires keep controlling me even though I know they are harmful.",
+    "expected_any": [
+      "BG3.37",
+      "BG3.39",
+      "BG16.21",
+      "BG14.7",
+      "BG16.12",
+      "BG18.49",
+      "BG14.12"
+    ]
+  }
+]

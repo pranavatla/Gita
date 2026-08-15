@@ -1,0 +1,42 @@
+[
+  {
+    "id": "success_and_failure",
+    "query": "When my work succeeds I feel superior, and when it fails I lose motivation.",
+    "expected_any": [
+      "BG2.38",
+      "BG2.48"
+    ]
+  },
+  {
+    "id": "wandering_mind",
+    "query": "Whenever I try to meditate, my mind keeps wandering and I cannot control it.",
+    "expected_any": [
+      "BG6.26",
+      "BG6.34",
+      "BG6.35"
+    ]
+  },
+  {
+    "id": "unbalanced_lifestyle",
+    "query": "I work constantly, sleep very little, and feel physically and mentally exhausted.",
+    "expected_any": [
+      "BG6.16",
+      "BG6.17"
+    ]
+  },
+  {
+    "id": "charity_for_recognition",
+    "query": "I donate money mainly because I want praise and something in return.",
+    "expected_any": [
+      "BG17.21"
+    ]
+  },
+  {
+    "id": "mind_as_enemy",
+    "query": "My own mind keeps dragging me down and working against my wellbeing.",
+    "expected_any": [
+      "BG6.5",
+      "BG6.6"
+    ]
+  }
+]

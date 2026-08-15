@@ -1,0 +1,78 @@
+[
+  {
+    "id": "truthful_speech_without_harm",
+    "query": "I tell the truth, but I say it so harshly that people feel agitated and hurt.",
+    "expected_any": [
+      "BG17.15"
+    ]
+  },
+  {
+    "id": "leadership_by_example",
+    "query": "People on my team copy my behavior, so I need to set a good standard through my own actions.",
+    "expected_any": [
+      "BG3.21"
+    ]
+  },
+  {
+    "id": "persistent_doubt",
+    "query": "I keep doubting the knowledge I study and cannot develop faith or inner peace.",
+    "expected_any": [
+      "BG4.39",
+      "BG4.40"
+    ]
+  },
+  {
+    "id": "unhealthy_food_preferences",
+    "query": "I prefer extremely hot, salty, and pungent food even though it leaves me distressed and unwell.",
+    "expected_any": [
+      "BG17.9"
+    ]
+  },
+  {
+    "id": "pride_and_humility",
+    "query": "I am proud of my status, expect respect, and struggle to behave with humility.",
+    "expected_any": [
+      "BG13.8",
+      "BG16.4"
+    ]
+  },
+  {
+    "id": "equal_toward_friends_and_enemies",
+    "query": "My mind is warm toward friends but hostile toward enemies; I want to treat both with balance.",
+    "expected_any": [
+      "BG6.9",
+      "BG12.18"
+    ]
+  },
+  {
+    "id": "avoiding_all_work",
+    "query": "I believe that simply refusing to do any work will free me from the consequences of action.",
+    "expected_any": [
+      "BG3.4",
+      "BG3.5"
+    ]
+  },
+  {
+    "id": "meditation_environment",
+    "query": "I try to meditate in crowded distracting places and cannot keep my mind controlled.",
+    "expected_any": [
+      "BG6.10",
+      "BG6.11"
+    ]
+  },
+  {
+    "id": "learning_from_a_teacher",
+    "query": "I want real knowledge, but I approach my teacher arrogantly instead of asking sincerely and serving.",
+    "expected_any": [
+      "BG4.34"
+    ]
+  },
+  {
+    "id": "withdrawing_the_senses",
+    "query": "When tempting objects appear, my senses immediately chase them; I need to withdraw and control them.",
+    "expected_any": [
+      "BG2.58",
+      "BG2.64"
+    ]
+  }
+]
