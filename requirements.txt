@@ -1,0 +1,9 @@
+fastapi==0.141.1
+uvicorn==0.52.2
+chromadb==1.5.9
+boto3==1.43.72
+botocore[crt]==1.43.72
+torch==2.13.0
+transformers==5.15.0
+pydantic==2.13.4
+awscrt==0.36.0
