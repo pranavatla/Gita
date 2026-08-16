@@ -26,6 +26,7 @@ RESULTS_PER_QUERY = 5
 MAX_RERANK_CANDIDATES = 8
 FINAL_RESULTS = 4
 RRF_CONSTANT = 60
+NUM_FACET_QUERIES = 3
 
 DOMAIN_EXPANSIONS = {
     "desire": [
@@ -91,36 +92,34 @@ DOMAIN_EXPANSIONS = {
     ],
 }
 
+FACET_FIELDS = [
+    "literal_action",
+    "source_concepts",
+    "consequence_or_remedy",
+]
+
 QUERY_SCHEMA = {
     "type": "object",
     "properties": {
         "literal_action": {"type": "string"},
         "source_concepts": {"type": "string"},
-        "ethical_character": {"type": "string"},
         "consequence_or_remedy": {"type": "string"},
     },
-    "required": [
-        "literal_action",
-        "source_concepts",
-        "ethical_character",
-        "consequence_or_remedy",
-    ],
+    "required": FACET_FIELDS,
 }
 
 def generate_search_queries(question):
     system_prompt = (
-        "Convert the user's scenario into exactly four distinct semantic "
+        "Convert the user's scenario into exactly three distinct semantic "
         "retrieval phrases. literal_action preserves what actually "
         "happened. source_concepts translates modern wording into 3 to 6 "
         "concise philosophical or scriptural concepts and useful synonyms, "
         "such as lust, craving, attachment, anger, greed, prescribed duty, "
         "detachment, or sense control when directly supported. "
-        "ethical_character describes only the conduct or principle directly "
-        "supported by the scenario; do not invent character judgments such "
-        "as laziness, arrogance, or bad character. consequence_or_remedy "
+        "consequence_or_remedy "
         "contains concise moral consequences and corrective principles "
         "supported by the scenario; do not invent legal, social, financial, "
-        "or supernatural outcomes. Keep all four values short, distinct, "
+        "or supernatural outcomes. Keep all three values short, distinct, "
         "and useful for retrieval. Do not mention scriptures, verse numbers, "
         "people, or facts absent from the scenario."
     )
@@ -146,22 +145,16 @@ def generate_search_queries(question):
         except json.JSONDecodeError:
             result = {}
 
-        fields = [
-            "literal_action",
-            "source_concepts",
-            "ethical_character",
-            "consequence_or_remedy",
-        ]
         queries = {
             field: result.get(field, "").strip()
-            for field in fields
+            for field in FACET_FIELDS
             if isinstance(result.get(field), str)
         }
 
         if (
-            len(queries) == 4
+            len(queries) == NUM_FACET_QUERIES
             and all(queries.values())
-            and len(set(queries.values())) == 4
+            and len(set(queries.values())) == NUM_FACET_QUERIES
         ):
             return queries
 
