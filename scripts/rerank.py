@@ -3,22 +3,27 @@ import re
 import sys
 from functools import lru_cache
 
-import chromadb
+try:
+    from .opensearch_client import search_similar_verses
+except ImportError:
+    from opensearch_client import search_similar_verses
+
+try:
+    from .bedrock_client import converse_text, parse_json_text
+except ImportError:
+    from bedrock_client import converse_text, parse_json_text
+
 import torch
-from bedrock_client import converse_text, embed_texts, parse_json_text
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
 )
 
 
-CHROMA_DIR = "data/chroma"
-COLLECTION_NAME = "gita_verses_v3_bedrock"
-GENERATION_MODEL = "llama3.1:8b"
 RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
 
-RESULTS_PER_QUERY = 10
-MAX_RERANK_CANDIDATES = 50
+RESULTS_PER_QUERY = 5
+MAX_RERANK_CANDIDATES = 20
 FINAL_RESULTS = 4
 RRF_CONSTANT = 60
 
@@ -192,9 +197,6 @@ def expand_domain_concepts(question):
 
 
 def retrieve_candidates(question, generated_queries):
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
-    collection = client.get_collection(name=COLLECTION_NAME)
-
     domain_queries = expand_domain_concepts(question)
 
     search_queries = [
@@ -204,55 +206,36 @@ def retrieve_candidates(question, generated_queries):
     ]
     search_queries = list(dict.fromkeys(search_queries))
 
-    embeddings = embed_texts(
-        [
-            f"search_query: {query}"
-            for query in search_queries
-        ],
-    )
-
     candidates = {}
 
-    for query, embedding in zip(
-        search_queries,
-        embeddings,
-    ):
-        results = collection.query(
-            query_embeddings=[embedding],
-            n_results=RESULTS_PER_QUERY,
+    for rank, query in enumerate(search_queries, start=1):
+        results = search_similar_verses(
+            query,
+            k=RESULTS_PER_QUERY,
         )
 
-        for rank, (
-            verse_id,
-            document,
-            metadata,
-            distance,
-        ) in enumerate(
-            zip(
-                results["ids"][0],
-                results["documents"][0],
-                results["metadatas"][0],
-                results["distances"][0],
-            ),
-            start=1,
-        ):
+        for result_index, item in enumerate(results, start=1):
+            verse_id = item["id"]
+
             candidate = candidates.setdefault(
                 verse_id,
                 {
                     "id": verse_id,
-                    "document": document,
-                    "metadata": metadata,
+                    "document": item["document"],
+                    "metadata": item["metadata"],
                     "rrf_score": 0.0,
                     "matches": [],
                 },
             )
 
-            candidate["rrf_score"] += 1 / (RRF_CONSTANT + rank)
+            candidate["rrf_score"] += 1 / (
+                RRF_CONSTANT + result_index
+            )
             candidate["matches"].append(
                 {
                     "query": query,
-                    "rank": rank,
-                    "distance": distance,
+                    "rank": result_index,
+                    "distance": -item["score"],
                 }
             )
 

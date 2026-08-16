@@ -11,7 +11,6 @@ RUN python -c "from transformers import AutoTokenizer, AutoModelForSequenceClass
 
 COPY scripts /app/scripts
 COPY web /app/web
-COPY data/chroma /app/data/chroma
 
 EXPOSE 8000
 

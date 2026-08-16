@@ -1,8 +1,8 @@
 fastapi==0.141.1
 uvicorn==0.52.2
-chromadb==1.5.9
 boto3==1.43.72
 botocore[crt]==1.43.72
+opensearch-py==3.2.0
 torch==2.13.0
 transformers==5.15.0
 pydantic==2.13.4
