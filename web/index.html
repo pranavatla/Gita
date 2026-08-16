@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="An end-to-end local RAG system built over 700 Bhagavad Gita verses."
+      content="An end-to-end AWS-backed Bhagavad Gita RAG system built over 700 verses."
     />
-    <title>Bhagavad Gita RAG — End-to-End Local AI System</title>
+    <title>Bhagavad Gita RAG — AWS Bedrock + OpenSearch System</title>
     <style>
       :root {
         color-scheme: light;
@@ -548,6 +548,57 @@
         box-shadow: var(--shadow);
       }
 
+      .timing-panel {
+        margin-top: 18px;
+        padding: 22px 24px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255, 253, 248, 0.72);
+      }
+
+      .timing-summary {
+        margin-bottom: 16px;
+        color: #4f463d;
+        font-size: 15px;
+      }
+
+      .timing-summary strong {
+        color: var(--saffron-dark);
+      }
+
+      .timing-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .timing-item {
+        padding: 12px 14px;
+        border: 1px solid rgba(53, 43, 32, 0.1);
+        border-radius: 14px;
+        background: rgba(237, 226, 207, 0.42);
+      }
+
+      .timing-item span {
+        display: block;
+      }
+
+      .timing-item-label {
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .timing-item-value {
+        color: #352b20;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
       .message-panel,
       .passage-panel {
         padding: clamp(28px, 4vw, 48px);
@@ -641,6 +692,10 @@
           grid-template-columns: 1fr;
         }
 
+        .timing-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .pipeline-intro {
           grid-template-columns: 1fr;
           gap: 20px;
@@ -704,6 +759,10 @@
           grid-template-columns: 1fr;
         }
 
+        .timing-grid {
+          grid-template-columns: 1fr;
+        }
+
         .pipeline-card {
           min-height: 0;
         }
@@ -736,37 +795,38 @@
         <span class="brand-mark" aria-hidden="true">गीता</span>
         <span class="brand-copy">
           <strong>Bhagavad Gita RAG</strong>
-          <span>End-to-end local AI</span>
+          <span>Bedrock + OpenSearch</span>
         </span>
       </a>
       <div class="api-status" id="apiStatus" data-state="checking" role="status">
         <span class="status-dot" aria-hidden="true"></span>
-        <span class="status-label">Checking local API</span>
+        <span class="status-label">Checking API</span>
       </div>
     </header>
 
     <main class="shell" id="top">
       <section class="hero" aria-labelledby="pageTitle">
         <div>
-          <p class="eyebrow">Bhagavad Gita • End-to-end RAG system</p>
+          <p class="eyebrow">Bhagavad Gita • AWS-backed RAG system</p>
           <h1 id="pageTitle">700 verses.<br />One grounded answer.</h1>
           <p class="hero-copy">
-            I built a fully local retrieval-augmented generation system over the
-            Bhagavad Gita. It turns a real-world situation into focused semantic
-            searches, retrieves and reranks the most relevant verse, then returns
-            a source-grounded response with the original Sanskrit and English.
+            I built an AWS-backed retrieval-augmented generation system over the
+            Bhagavad Gita using Amazon Bedrock, OpenSearch Serverless, and a
+            local reranker. It turns a real situation into focused semantic
+            searches, retrieves and reranks the strongest verse candidate, then
+            returns a grounded answer with the original Sanskrit and English.
           </p>
           <ul class="principles" aria-label="Project highlights">
-            <li>700 Bhagavad Gita verses enriched with retrieval themes</li>
-            <li>Query decomposition, vector search, RRF fusion, and BGE reranking</li>
-            <li>Two-stage local generation with validated single-source grounding</li>
+            <li>700 Bhagavad Gita verses enriched for semantic retrieval</li>
+            <li>Bedrock query intelligence, Titan embeddings, OpenSearch retrieval, and BGE reranking</li>
+            <li>Structured verse selection plus grounded answer generation on Bedrock</li>
           </ul>
         </div>
 
         <form class="ask-card" id="questionForm">
           <div class="form-heading">
             <h2>Generate a grounded answer</h2>
-            <p>Describe one real situation. The system will trace it to one verse.</p>
+            <p>Describe one real situation. The system will trace it to one supporting verse.</p>
           </div>
 
           <label for="question">Your question or situation</label>
@@ -838,7 +898,7 @@
 
         <div class="result-grid">
           <article class="message-panel">
-            <p class="panel-label">Practical message</p>
+            <p class="panel-label">Grounded answer</p>
             <p class="message-text" id="messageText"></p>
           </article>
 
@@ -857,6 +917,37 @@
             </div>
           </article>
         </div>
+
+        <div class="timing-panel" aria-labelledby="timingTitle">
+          <p class="panel-label" id="timingTitle">Latency for this response</p>
+          <p class="timing-summary" id="timingSummary"></p>
+          <div class="timing-grid">
+            <div class="timing-item">
+              <span class="timing-item-label">Query generation</span>
+              <span class="timing-item-value" id="timingQueryGeneration"></span>
+            </div>
+            <div class="timing-item">
+              <span class="timing-item-label">Retrieval</span>
+              <span class="timing-item-value" id="timingRetrieval"></span>
+            </div>
+            <div class="timing-item">
+              <span class="timing-item-label">Reranking</span>
+              <span class="timing-item-value" id="timingReranking"></span>
+            </div>
+            <div class="timing-item">
+              <span class="timing-item-label">Verse selection</span>
+              <span class="timing-item-value" id="timingVerseSelection"></span>
+            </div>
+            <div class="timing-item">
+              <span class="timing-item-label">Final answer generation</span>
+              <span class="timing-item-value" id="timingFinalAnswerGeneration"></span>
+            </div>
+            <div class="timing-item">
+              <span class="timing-item-label">Total pipeline</span>
+              <span class="timing-item-value" id="timingTotalPipeline"></span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="pipeline-section" aria-labelledby="pipelineTitle">
@@ -866,10 +957,10 @@
             <h2 id="pipelineTitle">Every stage of the RAG pipeline</h2>
           </div>
           <p class="pipeline-intro-copy">
-            The production path combines deterministic retrieval controls with
-            local language models. Each stage has a narrow responsibility, from
-            translating the question into search concepts to validating the final
-            evidence-backed response.
+            The production path combines Amazon Bedrock, OpenSearch Serverless,
+            deterministic retrieval controls, and a local BGE reranker. Each
+            stage does one narrow job well, from translating the question into
+            search concepts to validating the final evidence-backed answer.
           </p>
         </div>
 
@@ -892,12 +983,13 @@
             <span class="pipeline-number">02</span>
             <h3>Query intelligence</h3>
             <p>
-              Llama 3.1 decomposes the scenario into four semantic facets while a
-              controlled domain map adds source-language concepts and synonyms.
+              Amazon Nova Lite decomposes the scenario into four semantic facets
+              while a controlled domain map adds source-language concepts and synonyms.
             </p>
             <div class="function-list">
               <code>generate_search_queries()</code>
               <code>expand_domain_concepts()</code>
+              <code>Amazon Nova Lite</code>
             </div>
           </article>
 
@@ -905,13 +997,13 @@
             <span class="pipeline-number">03</span>
             <h3>Vector retrieval</h3>
             <p>
-              Nomic embeddings search the Chroma collection across the original
-              question, generated facets, and deterministic domain expansions.
+              Titan embeddings search the OpenSearch Serverless vector index across
+              the original question, generated facets, and deterministic domain expansions.
             </p>
             <div class="function-list">
               <code>retrieve_candidates()</code>
-              <code>nomic-embed-text</code>
-              <code>ChromaDB</code>
+              <code>Titan Embed v2</code>
+              <code>OpenSearch Serverless</code>
             </div>
           </article>
 
@@ -920,11 +1012,12 @@
             <h3>Rank fusion</h3>
             <p>
               Reciprocal Rank Fusion merges results from every search, rewards
-              repeated evidence, removes duplicate verses, and keeps 50 candidates.
+              repeated evidence, removes duplicate verses, and keeps the top 20 candidates.
             </p>
             <div class="function-list">
               <code>RRF_CONSTANT = 60</code>
-              <code>MAX_RERANK_CANDIDATES = 50</code>
+              <code>RESULTS_PER_QUERY = 5</code>
+              <code>MAX_RERANK_CANDIDATES = 20</code>
             </div>
           </article>
 
@@ -932,8 +1025,8 @@
             <span class="pipeline-number">05</span>
             <h3>Neural reranking</h3>
             <p>
-              A cached BGE cross-encoder scores every candidate against the original
-              question and its strongest auxiliary search, then returns a global top four.
+              A cached local BGE cross-encoder scores every candidate against the original
+              question and its strongest auxiliary search, then returns the best four passages.
             </p>
             <div class="function-list">
               <code>load_reranker()</code>
@@ -946,12 +1039,13 @@
             <span class="pipeline-number">06</span>
             <h3>Evidence selection</h3>
             <p>
-              A structured Llama call selects exactly one allowed verse ID. Python
+              A structured Bedrock call selects exactly one allowed verse ID. Python
               validation rejects missing, duplicated, or unsupported references.
             </p>
             <div class="function-list">
               <code>select_verse_ids()</code>
               <code>validate_selection()</code>
+              <code>Amazon Nova Lite</code>
             </div>
           </article>
 
@@ -959,13 +1053,14 @@
             <span class="pipeline-number">07</span>
             <h3>Grounded generation</h3>
             <p>
-              A second call receives only the selected translation, separating
-              relevance selection from message writing to prevent scenario invention.
+              A second Bedrock call receives only the selected translation, separating
+              retrieval from response writing to reduce unsupported invention.
             </p>
             <div class="function-list">
               <code>build_context()</code>
               <code>generate_passage_message()</code>
               <code>validate_message()</code>
+              <code>Amazon Nova Lite</code>
             </div>
           </article>
 
@@ -974,7 +1069,7 @@
             <h3>Orchestration and API</h3>
             <p>
               The final orchestration composes the grounded answer and exposes it
-              through a validated FastAPI endpoint with one-model-at-a-time execution.
+              through a validated FastAPI endpoint for the web experience and API consumers.
             </p>
             <div class="function-list">
               <code>generate_grounded_answer()</code>
@@ -987,8 +1082,8 @@
     </main>
 
     <footer class="site-footer shell">
-      <span>Bhagavad Gita RAG • Local retrieval, reranking, and generation</span>
-      <span>Python · Ollama · ChromaDB · BGE · FastAPI</span>
+      <span>Bhagavad Gita RAG • AWS retrieval with local reranking</span>
+      <span>Python · Amazon Bedrock · OpenSearch Serverless · BGE · FastAPI</span>
     </footer>
 
     <script>
@@ -1007,7 +1102,18 @@
         sanskrit: document.querySelector("#sanskritText"),
         transliteration: document.querySelector("#transliterationText"),
         english: document.querySelector("#englishText"),
+        timingSummary: document.querySelector("#timingSummary"),
+        timingQueryGeneration: document.querySelector("#timingQueryGeneration"),
+        timingRetrieval: document.querySelector("#timingRetrieval"),
+        timingReranking: document.querySelector("#timingReranking"),
+        timingVerseSelection: document.querySelector("#timingVerseSelection"),
+        timingFinalAnswerGeneration: document.querySelector("#timingFinalAnswerGeneration"),
+        timingTotalPipeline: document.querySelector("#timingTotalPipeline"),
       };
+
+      function formatSeconds(value) {
+        return `${Number(value).toFixed(2)}s`;
+      }
 
       function setLoading(isLoading) {
         submitButton.disabled = isLoading;
@@ -1028,6 +1134,27 @@
         resultFields.sanskrit.textContent = data.passage.sanskrit;
         resultFields.transliteration.textContent = data.passage.transliteration;
         resultFields.english.textContent = data.passage.english;
+        resultFields.timingSummary.innerHTML =
+          `This answer was generated in <strong>${formatSeconds(data.total_seconds)}</strong> on this run. ` +
+          `The breakdown below shows exactly where the time went across the pipeline.`;
+        resultFields.timingQueryGeneration.textContent = formatSeconds(
+          data.timings.query_generation
+        );
+        resultFields.timingRetrieval.textContent = formatSeconds(
+          data.timings.retrieval
+        );
+        resultFields.timingReranking.textContent = formatSeconds(
+          data.timings.reranking
+        );
+        resultFields.timingVerseSelection.textContent = formatSeconds(
+          data.timings.verse_selection
+        );
+        resultFields.timingFinalAnswerGeneration.textContent = formatSeconds(
+          data.timings.final_answer_generation
+        );
+        resultFields.timingTotalPipeline.textContent = formatSeconds(
+          data.timings.total_pipeline
+        );
         resultSection.dataset.visible = "true";
         resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }
@@ -1039,10 +1166,10 @@
           });
           if (!response.ok) throw new Error("Health check failed");
           apiStatus.dataset.state = "online";
-          apiStatus.querySelector(".status-label").textContent = "Local API online";
+          apiStatus.querySelector(".status-label").textContent = "API online";
         } catch {
           apiStatus.dataset.state = "offline";
-          apiStatus.querySelector(".status-label").textContent = "Local API unavailable";
+          apiStatus.querySelector(".status-label").textContent = "API unavailable";
         }
       }
 
@@ -1072,11 +1199,11 @@
             throw new Error(
               typeof detail === "string"
                 ? detail
-                : "The local API could not generate an answer."
+                : "The API could not generate an answer."
             );
           }
 
-          if (!data?.message || !data?.passage) {
+          if (!data?.message || !data?.passage || !data?.timings) {
             throw new Error("The API returned an incomplete answer.");
           }
 

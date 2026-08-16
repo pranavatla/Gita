@@ -36,8 +36,19 @@ class PassageResponse(BaseModel):
     english: str
 
 
+class TimingsResponse(BaseModel):
+    query_generation: float
+    retrieval: float
+    reranking: float
+    verse_selection: float
+    final_answer_generation: float
+    total_pipeline: float
+
+
 class AnswerResponse(BaseModel):
     message: str
+    total_seconds: float
+    timings: TimingsResponse
     passage: PassageResponse
 
 
@@ -95,6 +106,8 @@ def create_answer(request: QuestionRequest):
 
     return AnswerResponse(
         message=answer["message"],
+        total_seconds=answer["total_seconds"],
+        timings=TimingsResponse(**answer["timings"]),
         passage=PassageResponse(
             id=verse_id,
             sanskrit=metadata["sanskrit"],

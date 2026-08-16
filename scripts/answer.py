@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 
 from bedrock_client import converse_text, parse_json_text
 
@@ -332,22 +333,74 @@ def print_answer(answer, selected):
 
 
 def answer_question(question):
-    facet_queries = generate_search_queries(question)
+    started_at = time.perf_counter()
+    timings = {}
 
+    step_started_at = time.perf_counter()
+    facet_queries = generate_search_queries(question)
+    elapsed = time.perf_counter() - step_started_at
+    timings["query_generation"] = elapsed
+    print(f"query generation: {elapsed:.2f}s")
+
+    step_started_at = time.perf_counter()
     search_queries, candidates = retrieve_candidates(
         question,
         list(facet_queries.values()),
     )
+    elapsed = time.perf_counter() - step_started_at
+    timings["retrieval"] = elapsed
+    print(f"retrieval: {elapsed:.2f}s")
 
+    step_started_at = time.perf_counter()
     selected, _ = rerank_globally(
         search_queries,
         candidates,
     )
+    elapsed = time.perf_counter() - step_started_at
+    timings["reranking"] = elapsed
+    print(f"reranking: {elapsed:.2f}s")
 
-    answer = generate_grounded_answer(
+    step_started_at = time.perf_counter()
+    used_verse_ids = select_verse_ids(
         question,
         selected,
     )
+    elapsed = time.perf_counter() - step_started_at
+    timings["verse_selection"] = elapsed
+    print(f"verse selection: {elapsed:.2f}s")
+
+    step_started_at = time.perf_counter()
+    passage_message = generate_passage_message(
+        used_verse_ids,
+        selected,
+    )
+    elapsed = time.perf_counter() - step_started_at
+    timings["final_answer_generation"] = elapsed
+    print(f"final answer generation: {elapsed:.2f}s")
+
+    if len(used_verse_ids) == 1:
+        introduction = (
+            "A related principle from the selected passage is:"
+        )
+    else:
+        introduction = (
+            "Related principles from the selected passages are:"
+        )
+
+    total_seconds = time.perf_counter() - started_at
+    timings["total_pipeline"] = total_seconds
+
+    answer = {
+        "message": (
+            f"{introduction} {passage_message['principle']} "
+            f"Practical application: {passage_message['application']}"
+        ),
+        "used_verse_ids": used_verse_ids,
+        "timings": timings,
+        "total_seconds": total_seconds,
+    }
+
+    print(f"total pipeline: {total_seconds:.2f}s")
 
     return answer, selected
 
