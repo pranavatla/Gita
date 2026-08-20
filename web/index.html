@@ -7,10 +7,41 @@
       name="description"
       content="An end-to-end AWS-backed Bhagavad Gita RAG system built over 700 verses."
     />
-    <title>Bhagavad Gita RAG — AWS Bedrock + OpenSearch System</title>
+    <title>Bhagavad Gita RAG · AWS Bedrock and OpenSearch</title>
+
+    <meta name="theme-color" content="#f6f0e4" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bhagavad Gita RAG" />
+    <meta property="og:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
+    <meta
+      property="og:description"
+      content="An AWS-backed retrieval-augmented generation system over the Bhagavad Gita using Amazon Bedrock, OpenSearch Serverless, and a local BGE reranker."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
+    <meta
+      name="twitter:description"
+      content="AWS-backed RAG over the Bhagavad Gita: Bedrock query intelligence, OpenSearch retrieval, and local reranking return a grounded answer with the original Sanskrit."
+    />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6f0e4'/%3E%3Ccircle cx='32' cy='32' r='18' fill='none' stroke='%2391431d' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23bd612b'/%3E%3C/svg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Noto+Serif+Devanagari:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
         color-scheme: light;
+        /* Saffron is the colour of sannyasa, the renunciate tradition the Gita
+           addresses directly. It is chosen for that reason, not as a generic
+           warm-craft palette. It is the page's single accent: nothing else on
+           the page introduces a second accent family. */
         --paper: #f6f0e4;
         --paper-deep: #ede2cf;
         --ink: #211c17;
@@ -18,9 +49,36 @@
         --line: rgba(53, 43, 32, 0.16);
         --saffron: #bd612b;
         --saffron-dark: #91431d;
-        --leaf: #53634b;
+        --ink-panel: #2b241c;
         --white: #fffdf8;
         --shadow: 0 24px 80px rgba(63, 45, 28, 0.12);
+
+        /* Display face is EB Garamond: a humanist Garamond revival whose manuscript
+           heritage suits a scripture-retrieval subject. Body is Geist, paired with
+           Geist Mono for code identifiers and latency figures. */
+        --serif: "EB Garamond", Georgia, "Times New Roman", serif;
+        --sans: Geist, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --mono: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+        --devanagari: "Noto Serif Devanagari", "EB Garamond", Georgia, serif;
+
+        /* Shape lock: containers 24px, inner panels 14px, chips 8px,
+           interactive controls full-pill. No other radii on the page. */
+        --r-container: 24px;
+        --r-panel: 14px;
+        --r-chip: 8px;
+        --r-pill: 999px;
+
+        /* Layer scale. Nothing on the page may invent a z-index outside this. */
+        --z-base: 0;
+        --z-content: 1;
+        --z-skip: 10;
+
+        /* One light source, top-left, tinted to the paper hue. */
+        --shadow-sm: 0 1px 2px rgba(63, 45, 28, 0.05), 0 6px 16px rgba(63, 45, 28, 0.05);
+        --shadow-md: 0 2px 4px rgba(63, 45, 28, 0.06), 0 14px 40px rgba(63, 45, 28, 0.08);
+
+        /* Fixed grain overlay, kept faint enough to read as paper tooth. */
+        --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
       }
 
       * {
@@ -32,15 +90,60 @@
       }
 
       body {
+        position: relative;
         min-height: 100vh;
+        min-height: 100dvh;
+        overflow-x: clip;
         margin: 0;
         color: var(--ink);
         background:
           radial-gradient(circle at 12% 8%, rgba(189, 97, 43, 0.12), transparent 30rem),
-          radial-gradient(circle at 92% 28%, rgba(83, 99, 75, 0.1), transparent 28rem),
+          radial-gradient(circle at 92% 28%, rgba(145, 67, 29, 0.07), transparent 28rem),
           var(--paper);
-        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: var(--sans);
+        font-feature-settings: "cv05" 1;
         line-height: 1.6;
+      }
+
+      body::before {
+        position: fixed;
+        z-index: var(--z-base);
+        inset: 0;
+        content: "";
+        background-image: var(--grain);
+        opacity: 0.32;
+        mix-blend-mode: multiply;
+        pointer-events: none;
+      }
+
+      .site-header,
+      main,
+      .site-footer {
+        position: relative;
+        z-index: var(--z-content);
+      }
+
+      .skip-link {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        z-index: var(--z-skip);
+        padding: 12px 18px;
+        border-radius: var(--r-pill);
+        color: var(--white);
+        background: var(--saffron-dark);
+        box-shadow: var(--shadow-md);
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transform: translate(-50%, calc(-100% - 20px));
+        transition: transform 180ms ease;
+      }
+
+      .skip-link:focus-visible {
+        outline: 3px solid rgba(189, 97, 43, 0.32);
+        outline-offset: 3px;
+        transform: translate(-50%, 0);
       }
 
       button,
@@ -59,9 +162,10 @@
 
       .site-header {
         display: flex;
+        max-height: 80px;
         align-items: center;
         justify-content: space-between;
-        padding: 28px 0;
+        padding: 14px 0;
       }
 
       .brand {
@@ -74,17 +178,17 @@
 
       .brand-mark {
         display: grid;
-        width: 48px;
-        height: 48px;
+        width: 44px;
+        height: 44px;
         place-items: center;
         border: 1px solid var(--line);
         border-radius: 50%;
         color: var(--saffron-dark);
         background: rgba(255, 253, 248, 0.64);
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--devanagari);
         font-size: 15px;
-        font-weight: 700;
-        box-shadow: 0 10px 30px rgba(83, 54, 31, 0.08);
+        font-weight: 600;
+        box-shadow: var(--shadow-sm);
       }
 
       .brand-copy {
@@ -93,7 +197,7 @@
       }
 
       .brand-copy strong {
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--serif);
         font-size: 18px;
         letter-spacing: 0.01em;
       }
@@ -137,10 +241,37 @@
       }
 
       .hero {
+        position: relative;
         display: grid;
-        grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
-        gap: 72px;
+        grid-template-columns: minmax(0, 1.1fr) minmax(400px, 0.9fr);
+        gap: 56px;
         align-items: start;
+      }
+
+      /* Atmospheric wash behind the hero. Masked away from the lower left so it
+         never sits under the headline or body copy, and kept far below the
+         opacity where it could affect text or form contrast.
+         TODO: replace with real project imagery when art direction exists. */
+      .hero::before {
+        position: absolute;
+        z-index: var(--z-base);
+        top: -80px;
+        right: 0;
+        left: 20%;
+        height: 420px;
+        content: "";
+        background-image: url("https://picsum.photos/seed/gita-hero-atmosphere/1400/800?grayscale&blur=4");
+        background-position: center;
+        background-size: cover;
+        opacity: 0.1;
+        filter: contrast(0.9);
+        mask-image: radial-gradient(ellipse at 70% 30%, #000 20%, transparent 72%);
+        pointer-events: none;
+      }
+
+      .hero > * {
+        position: relative;
+        z-index: var(--z-content);
       }
 
       .eyebrow {
@@ -162,42 +293,94 @@
       h1 {
         max-width: 650px;
         margin-bottom: 24px;
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: clamp(52px, 7vw, 88px);
+        font-family: var(--serif);
+        /* Scale is planned against the 5-word headline and the column width so
+           it holds at two lines. Larger scales push it to three. */
+        font-size: clamp(40px, 4.2vw, 58px);
         font-weight: 500;
-        letter-spacing: -0.055em;
-        line-height: 0.98;
+        letter-spacing: -0.025em;
+        line-height: 1.04;
+        text-wrap: balance;
       }
 
       .hero-copy {
-        max-width: 560px;
+        max-width: 58ch;
         margin-bottom: 34px;
         color: var(--muted);
         font-size: 18px;
+        line-height: 1.65;
+        text-wrap: pretty;
       }
 
-      .principles {
+      /* Asymmetric figure row. Deliberately not three equal cards: the lead
+         cell is wider and carries a tint, the other two are open on the page
+         and separated by hairlines rather than boxes. */
+      .figures {
         display: grid;
-        max-width: 510px;
-        gap: 13px;
-        margin: 0;
-        padding: 0;
-        list-style: none;
+        grid-template-columns: 1.4fr 1fr 1fr;
+        margin-top: 96px;
+        border-top: 1px solid var(--line);
       }
 
-      .principles li {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #4d463f;
-        font-size: 14px;
+      .figure {
+        padding: 34px 30px 30px 0;
       }
 
-      .principles li::before {
-        width: 22px;
-        height: 1px;
+      .figure + .figure {
+        padding-left: 30px;
+        border-left: 1px solid var(--line);
+      }
+
+      .figure-lead {
+        position: relative;
+        padding-left: 30px;
+        padding-right: 40px;
+        background: linear-gradient(
+          180deg,
+          rgba(189, 97, 43, 0.07),
+          rgba(189, 97, 43, 0)
+        );
+      }
+
+      .figure-lead::before {
+        position: absolute;
+        top: -1px;
+        left: 0;
+        width: 64px;
+        height: 2px;
         content: "";
         background: var(--saffron);
+      }
+
+      .figure-value {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--ink);
+        font-family: var(--serif);
+        font-size: clamp(44px, 5vw, 64px);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+
+      .figure-lead .figure-value {
+        color: var(--saffron-dark);
+      }
+
+      .figure-label {
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+      }
+
+      .figure-note {
+        max-width: 34ch;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+        text-wrap: pretty;
       }
 
       .ask-card {
@@ -205,9 +388,10 @@
         overflow: hidden;
         padding: 30px;
         border: 1px solid var(--line);
-        border-radius: 28px;
+        border-radius: var(--r-container);
         background: rgba(255, 253, 248, 0.88);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9),
+          inset 0 -1px 0 rgba(63, 45, 28, 0.05);
         backdrop-filter: blur(16px);
       }
 
@@ -217,7 +401,7 @@
         right: 0;
         width: 150px;
         height: 150px;
-        border-radius: 0 28px 0 100%;
+        border-radius: 0 var(--r-container) 0 100%;
         content: "";
         background: linear-gradient(135deg, transparent, rgba(189, 97, 43, 0.1));
         pointer-events: none;
@@ -230,7 +414,7 @@
 
       .form-heading h2 {
         margin-bottom: 5px;
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--serif);
         font-size: 28px;
         font-weight: 500;
       }
@@ -258,7 +442,7 @@
         resize: vertical;
         padding: 18px 18px 40px;
         border: 1px solid var(--line);
-        border-radius: 16px;
+        border-radius: var(--r-panel);
         outline: none;
         color: var(--ink);
         background: rgba(246, 240, 228, 0.48);
@@ -267,7 +451,7 @@
       }
 
       textarea::placeholder {
-        color: #998f83;
+        color: #746a5f;
       }
 
       textarea:focus {
@@ -280,8 +464,9 @@
         position: absolute;
         right: 14px;
         bottom: 10px;
-        color: #93887b;
+        color: var(--muted);
         font-size: 11px;
+        font-variant-numeric: tabular-nums;
       }
 
       .examples {
@@ -303,18 +488,24 @@
       .example-button {
         padding: 8px 11px;
         border: 1px solid var(--line);
-        border-radius: 999px;
+        border-radius: var(--r-pill);
         color: #5a5148;
         background: transparent;
         cursor: pointer;
         font-size: 12px;
-        transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+        transition: border-color 150ms ease, color 150ms ease, background 150ms ease,
+          transform 120ms ease;
       }
 
       .example-button:hover {
         border-color: rgba(189, 97, 43, 0.4);
         color: var(--saffron-dark);
         background: rgba(189, 97, 43, 0.06);
+      }
+
+      .example-button:active {
+        background: rgba(189, 97, 43, 0.12);
+        transform: translateY(1px);
       }
 
       .form-actions {
@@ -326,7 +517,7 @@
       }
 
       .keyboard-hint {
-        color: #8a8075;
+        color: var(--muted);
         font-size: 11px;
       }
 
@@ -339,18 +530,26 @@
         gap: 10px;
         padding: 12px 20px;
         border: 0;
-        border-radius: 999px;
+        border-radius: var(--r-pill);
         color: white;
         background: var(--saffron-dark);
         box-shadow: 0 10px 24px rgba(145, 67, 29, 0.22);
         cursor: pointer;
-        font-weight: 700;
-        transition: transform 150ms ease, background 150ms ease, opacity 150ms ease;
+        font-weight: 600;
+        transition: transform 150ms ease, background 150ms ease, opacity 150ms ease,
+          box-shadow 150ms ease;
       }
 
       .submit-button:hover:not(:disabled) {
         transform: translateY(-1px);
         background: #7d3819;
+        box-shadow: 0 14px 30px rgba(145, 67, 29, 0.26);
+      }
+
+      .submit-button:active:not(:disabled) {
+        transform: translateY(1px) scale(0.99);
+        box-shadow: 0 6px 14px rgba(145, 67, 29, 0.2);
+        transition-duration: 90ms;
       }
 
       .submit-button:focus-visible,
@@ -401,6 +600,114 @@
         scroll-margin-top: 32px;
       }
 
+      .skeleton-section {
+        display: none;
+        margin-top: 88px;
+        scroll-margin-top: 32px;
+      }
+
+      .skeleton-section[data-visible="true"] {
+        display: block;
+        animation: reveal 420ms ease both;
+      }
+
+      .skeleton-status {
+        margin-bottom: 20px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .skeleton-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: var(--r-container);
+        background: rgba(255, 253, 248, 0.82);
+        box-shadow: var(--shadow);
+      }
+
+      .skeleton-panel {
+        display: grid;
+        align-content: start;
+        gap: 14px;
+        padding: clamp(28px, 4vw, 48px);
+      }
+
+      .skeleton-panel.is-message {
+        background: var(--ink-panel);
+      }
+
+      .skeleton-line {
+        position: relative;
+        overflow: hidden;
+        height: 13px;
+        border-radius: var(--r-pill);
+        background: rgba(53, 43, 32, 0.09);
+      }
+
+      .skeleton-panel.is-message .skeleton-line {
+        height: 22px;
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .skeleton-line::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 253, 248, 0.75),
+          transparent
+        );
+        animation: shimmer 1500ms ease-in-out infinite;
+      }
+
+      .skeleton-panel.is-message .skeleton-line::after {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.3),
+          transparent
+        );
+      }
+
+      .skeleton-line[data-width="short"] {
+        width: 42%;
+      }
+
+      .skeleton-line[data-width="medium"] {
+        width: 74%;
+      }
+
+      .skeleton-line[data-width="label"] {
+        width: 26%;
+        height: 9px;
+        margin-bottom: 6px;
+      }
+
+      .skeleton-line:nth-child(2)::after {
+        animation-delay: 90ms;
+      }
+
+      .skeleton-line:nth-child(3)::after {
+        animation-delay: 180ms;
+      }
+
+      .skeleton-line:nth-child(4)::after {
+        animation-delay: 270ms;
+      }
+
+      @keyframes shimmer {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(100%);
+        }
+      }
+
       .pipeline-section {
         margin-top: 112px;
         padding-top: 72px;
@@ -418,53 +725,109 @@
       .pipeline-intro h2 {
         max-width: 600px;
         margin-bottom: 0;
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: clamp(38px, 5vw, 58px);
+        font-family: var(--serif);
+        font-size: clamp(34px, 4vw, 50px);
         font-weight: 500;
-        letter-spacing: -0.04em;
+        letter-spacing: -0.022em;
         line-height: 1.05;
+        text-wrap: balance;
       }
 
       .pipeline-intro-copy {
-        max-width: 590px;
+        max-width: 62ch;
         margin-bottom: 3px;
         color: var(--muted);
         font-size: 15px;
+        line-height: 1.65;
+        text-wrap: pretty;
       }
 
+      /* Bento with rhythm rather than eight identical tiles. Four bands across
+         a 6-column track: 3+3, 2+2+2, 3+3, then the orchestration stage full
+         width as the capstone. Cell count matches stage count exactly. */
       .pipeline-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 12px;
       }
 
+      .pipeline-card:nth-child(1),
+      .pipeline-card:nth-child(2),
+      .pipeline-card:nth-child(6),
+      .pipeline-card:nth-child(7) {
+        grid-column: span 3;
+      }
+
+      .pipeline-card:nth-child(3),
+      .pipeline-card:nth-child(4),
+      .pipeline-card:nth-child(5) {
+        grid-column: span 2;
+      }
+
+      .pipeline-card:nth-child(8) {
+        min-height: 0;
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 36px;
+        grid-column: span 6;
+      }
+
+      .pipeline-card:nth-child(8) h3 {
+        flex: 0 0 240px;
+        margin-bottom: 0;
+      }
+
+      .pipeline-card:nth-child(8) p {
+        flex: 1;
+        max-width: 46ch;
+        margin-bottom: 0;
+      }
+
+      .pipeline-card:nth-child(8) .function-list {
+        margin-top: 0;
+        justify-content: flex-end;
+      }
+
+      /* One gradient across all eight tiles. The bento rhythm carries the
+         visual variation; the surfaces stay uniform. */
       .pipeline-card {
+        display: flex;
         min-height: 250px;
+        flex-direction: column;
         padding: 24px;
         border: 1px solid var(--line);
-        border-radius: 20px;
-        background: rgba(255, 253, 248, 0.62);
-        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+        border-radius: var(--r-panel);
+        background: linear-gradient(
+          160deg,
+          rgba(189, 97, 43, 0.1),
+          rgba(255, 253, 248, 0.62) 60%
+        );
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease,
+          box-shadow 160ms ease;
       }
 
       .pipeline-card:hover {
         transform: translateY(-2px);
         border-color: rgba(189, 97, 43, 0.34);
-        background: rgba(255, 253, 248, 0.9);
+        background: linear-gradient(
+          160deg,
+          rgba(189, 97, 43, 0.14),
+          rgba(255, 253, 248, 0.9) 60%
+        );
+        box-shadow: var(--shadow-md);
       }
 
-      .pipeline-number {
-        display: block;
-        margin-bottom: 28px;
-        color: var(--saffron-dark);
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 13px;
-        font-style: italic;
+      .skeleton-title {
+        margin-bottom: 6px;
+        font-family: var(--serif);
+        font-size: 26px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
       }
 
       .pipeline-card h3 {
         margin-bottom: 10px;
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--serif);
         font-size: 21px;
         font-weight: 500;
         line-height: 1.2;
@@ -487,10 +850,10 @@
       .function-list code {
         padding: 5px 7px;
         border: 1px solid rgba(53, 43, 32, 0.1);
-        border-radius: 7px;
+        border-radius: var(--r-chip);
         color: #59483b;
         background: rgba(237, 226, 207, 0.65);
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-family: var(--mono);
         font-size: 10px;
       }
 
@@ -520,7 +883,7 @@
 
       .result-heading h2 {
         margin-bottom: 0;
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--serif);
         font-size: clamp(32px, 4vw, 48px);
         font-weight: 500;
         letter-spacing: -0.025em;
@@ -530,7 +893,7 @@
         display: inline-flex;
         padding: 7px 12px;
         border: 1px solid rgba(189, 97, 43, 0.25);
-        border-radius: 999px;
+        border-radius: var(--r-pill);
         color: var(--saffron-dark);
         background: rgba(189, 97, 43, 0.07);
         font-size: 12px;
@@ -543,7 +906,7 @@
         grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
         overflow: hidden;
         border: 1px solid var(--line);
-        border-radius: 28px;
+        border-radius: var(--r-container);
         background: rgba(255, 253, 248, 0.82);
         box-shadow: var(--shadow);
       }
@@ -552,7 +915,7 @@
         margin-top: 18px;
         padding: 22px 24px;
         border: 1px solid var(--line);
-        border-radius: 20px;
+        border-radius: var(--r-panel);
         background: rgba(255, 253, 248, 0.72);
       }
 
@@ -575,7 +938,7 @@
       .timing-item {
         padding: 12px 14px;
         border: 1px solid rgba(53, 43, 32, 0.1);
-        border-radius: 14px;
+        border-radius: var(--r-panel);
         background: rgba(237, 226, 207, 0.42);
       }
 
@@ -594,8 +957,9 @@
 
       .timing-item-value {
         color: #352b20;
-        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-family: var(--mono);
         font-size: 14px;
+        font-variant-numeric: tabular-nums;
         font-weight: 700;
       }
 
@@ -605,8 +969,19 @@
       }
 
       .message-panel {
+        position: relative;
         color: var(--white);
-        background: var(--leaf);
+        background: var(--ink-panel);
+      }
+
+      .message-panel::after {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+        content: "";
+        background: var(--saffron);
       }
 
       .panel-label {
@@ -620,7 +995,7 @@
 
       .message-text {
         margin-bottom: 0;
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--serif);
         font-size: clamp(22px, 2.8vw, 32px);
         line-height: 1.4;
       }
@@ -647,16 +1022,17 @@
       .sanskrit {
         margin-bottom: 0;
         color: #312820;
-        font-family: Georgia, "Noto Serif Devanagari", serif;
+        font-family: var(--devanagari);
         font-size: clamp(22px, 3vw, 30px);
-        line-height: 1.8;
+        font-weight: 500;
+        line-height: 1.9;
         white-space: pre-line;
       }
 
       .transliteration {
         margin-bottom: 0;
         color: #675e54;
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--serif);
         font-size: 16px;
         font-style: italic;
         white-space: pre-line;
@@ -688,7 +1064,8 @@
           gap: 48px;
         }
 
-        .result-grid {
+        .result-grid,
+        .skeleton-grid {
           grid-template-columns: 1fr;
         }
 
@@ -703,6 +1080,50 @@
 
         .pipeline-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .pipeline-card:nth-child(n) {
+          grid-column: span 1;
+        }
+
+        .pipeline-card:nth-child(8) {
+          min-height: 250px;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0;
+          grid-column: span 2;
+        }
+
+        .pipeline-card:nth-child(8) h3 {
+          flex: none;
+          margin-bottom: 10px;
+        }
+
+        .pipeline-card:nth-child(8) p {
+          margin-bottom: 16px;
+        }
+
+        .pipeline-card:nth-child(8) .function-list {
+          margin-top: auto;
+          justify-content: flex-start;
+        }
+
+        .figures {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .figure-lead {
+          grid-column: span 2;
+          padding-right: 30px;
+        }
+
+        .figure-lead + .figure {
+          padding-left: 30px;
+          border-left: 0;
+        }
+
+        .figure:not(.figure-lead) {
+          border-top: 1px solid var(--line);
         }
       }
 
@@ -726,7 +1147,7 @@
         }
 
         h1 {
-          font-size: clamp(46px, 16vw, 66px);
+          font-size: clamp(34px, 9vw, 44px);
         }
 
         .hero-copy {
@@ -735,7 +1156,7 @@
 
         .ask-card {
           padding: 22px;
-          border-radius: 22px;
+          border-radius: var(--r-container);
         }
 
         .form-actions {
@@ -746,7 +1167,8 @@
           width: 100%;
         }
 
-        .result-section {
+        .result-section,
+        .skeleton-section {
           margin-top: 64px;
         }
 
@@ -757,6 +1179,35 @@
 
         .pipeline-grid {
           grid-template-columns: 1fr;
+        }
+
+        .pipeline-card:nth-child(8) {
+          grid-column: span 1;
+        }
+
+        .figures {
+          grid-template-columns: 1fr;
+          margin-top: 64px;
+        }
+
+        .figure-lead {
+          grid-column: auto;
+        }
+
+        .figure,
+        .figure-lead,
+        .figure + .figure {
+          padding-right: 0;
+          padding-left: 0;
+          border-left: 0;
+        }
+
+        .figure + .figure {
+          border-top: 1px solid var(--line);
+        }
+
+        .figure-lead {
+          background: none;
         }
 
         .timing-grid {
@@ -777,6 +1228,25 @@
         }
       }
 
+      /* Scroll reveal. Two motivated uses only: the figure row reads in
+         pipeline order (index, search, rerank), and the bento reveals stages
+         in the order the pipeline runs them. Gated behind .has-reveal so the
+         content is visible when JavaScript does not run. */
+      @media (prefers-reduced-motion: no-preference) {
+        .has-reveal [data-reveal] {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+
+        .has-reveal [data-reveal].is-revealed {
+          opacity: 1;
+          transform: none;
+          transition: opacity 620ms cubic-bezier(0.16, 1, 0.3, 1),
+            transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+          transition-delay: var(--reveal-delay, 0ms);
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -790,6 +1260,8 @@
     </style>
   </head>
   <body>
+    <a class="skip-link" href="#questionForm">Skip to the question form</a>
+
     <header class="site-header shell">
       <a class="brand" href="#top" aria-label="Gita Reflection home">
         <span class="brand-mark" aria-hidden="true">गीता</span>
@@ -810,23 +1282,14 @@
           <p class="eyebrow">Bhagavad Gita • AWS-backed RAG system</p>
           <h1 id="pageTitle">700 verses.<br />One grounded answer.</h1>
           <p class="hero-copy">
-            I built an AWS-backed retrieval-augmented generation system over the
-            Bhagavad Gita using Amazon Bedrock, OpenSearch Serverless, and a
-            local reranker. It turns a real situation into focused semantic
-            searches, retrieves and reranks the strongest verse candidate, then
-            returns a grounded answer with the original Sanskrit and English.
+            Describe a real situation. The system retrieves one supporting verse
+            and answers only from that text.
           </p>
-          <ul class="principles" aria-label="Project highlights">
-            <li>700 Bhagavad Gita verses enriched for semantic retrieval</li>
-            <li>Bedrock query intelligence, Titan embeddings, OpenSearch retrieval, and BGE reranking</li>
-            <li>Structured verse selection plus grounded answer generation on Bedrock</li>
-          </ul>
         </div>
 
         <form class="ask-card" id="questionForm">
           <div class="form-heading">
             <h2>Generate a grounded answer</h2>
-            <p>Describe one real situation. The system will trace it to one supporting verse.</p>
           </div>
 
           <label for="question">Your question or situation</label>
@@ -881,6 +1344,61 @@
         </form>
       </section>
 
+      <section class="figures" aria-label="What the system indexes and searches">
+        <article class="figure figure-lead" data-reveal>
+          <span class="figure-value">700</span>
+          <h2 class="figure-label">Verses indexed</h2>
+          <p class="figure-note">
+            Every verse enriched with themes and translation text before it
+            reaches the vector index.
+          </p>
+        </article>
+        <article class="figure" data-reveal>
+          <span class="figure-value">4</span>
+          <h2 class="figure-label">Semantic facets per question</h2>
+          <p class="figure-note">
+            Nova Lite decomposes one situation into separate searches.
+          </p>
+        </article>
+        <article class="figure" data-reveal>
+          <span class="figure-value">20</span>
+          <h2 class="figure-label">Candidates reranked</h2>
+          <p class="figure-note">
+            A local BGE cross-encoder scores them down to the best four.
+          </p>
+        </article>
+      </section>
+
+      <section
+        class="skeleton-section"
+        id="skeletonSection"
+        data-visible="false"
+        aria-hidden="true"
+      >
+        <p class="skeleton-title">Working through the pipeline</p>
+        <p class="skeleton-status">
+          Searching 700 verses, reranking the candidates, then grounding the
+          answer. This usually takes a few seconds.
+        </p>
+
+        <div class="skeleton-grid">
+          <div class="skeleton-panel is-message">
+            <span class="skeleton-line" data-width="medium"></span>
+            <span class="skeleton-line"></span>
+            <span class="skeleton-line"></span>
+            <span class="skeleton-line" data-width="short"></span>
+          </div>
+          <div class="skeleton-panel">
+            <span class="skeleton-line" data-width="label"></span>
+            <span class="skeleton-line"></span>
+            <span class="skeleton-line" data-width="medium"></span>
+            <span class="skeleton-line" data-width="label"></span>
+            <span class="skeleton-line"></span>
+            <span class="skeleton-line" data-width="short"></span>
+          </div>
+        </div>
+      </section>
+
       <section
         class="result-section"
         id="resultSection"
@@ -890,7 +1408,6 @@
       >
         <div class="result-heading">
           <div>
-            <p class="eyebrow">A passage to consider</p>
             <h2 id="resultTitle">Grounded reflection</h2>
           </div>
           <span class="verse-id" id="verseId"></span>
@@ -951,9 +1468,8 @@
       </section>
 
       <section class="pipeline-section" aria-labelledby="pipelineTitle">
-        <div class="pipeline-intro">
+        <div class="pipeline-intro" data-reveal>
           <div>
-            <p class="eyebrow">Inside the system</p>
             <h2 id="pipelineTitle">Every stage of the RAG pipeline</h2>
           </div>
           <p class="pipeline-intro-copy">
@@ -965,8 +1481,7 @@
         </div>
 
         <div class="pipeline-grid">
-          <article class="pipeline-card">
-            <span class="pipeline-number">01</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Corpus preparation</h3>
             <p>
               Loads 700 Bhagavad Gita records, validates structured theme output,
@@ -979,8 +1494,7 @@
             </div>
           </article>
 
-          <article class="pipeline-card">
-            <span class="pipeline-number">02</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Query intelligence</h3>
             <p>
               Amazon Nova Lite decomposes the scenario into four semantic facets
@@ -993,8 +1507,7 @@
             </div>
           </article>
 
-          <article class="pipeline-card">
-            <span class="pipeline-number">03</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Vector retrieval</h3>
             <p>
               Titan embeddings search the OpenSearch Serverless vector index across
@@ -1007,8 +1520,7 @@
             </div>
           </article>
 
-          <article class="pipeline-card">
-            <span class="pipeline-number">04</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Rank fusion</h3>
             <p>
               Reciprocal Rank Fusion merges results from every search, rewards
@@ -1021,8 +1533,7 @@
             </div>
           </article>
 
-          <article class="pipeline-card">
-            <span class="pipeline-number">05</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Neural reranking</h3>
             <p>
               A cached local BGE cross-encoder scores every candidate against the original
@@ -1035,8 +1546,7 @@
             </div>
           </article>
 
-          <article class="pipeline-card">
-            <span class="pipeline-number">06</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Evidence selection</h3>
             <p>
               A structured Bedrock call selects exactly one allowed verse ID. Python
@@ -1049,8 +1559,7 @@
             </div>
           </article>
 
-          <article class="pipeline-card">
-            <span class="pipeline-number">07</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Grounded generation</h3>
             <p>
               A second Bedrock call receives only the selected translation, separating
@@ -1064,8 +1573,7 @@
             </div>
           </article>
 
-          <article class="pipeline-card">
-            <span class="pipeline-number">08</span>
+          <article class="pipeline-card" data-reveal>
             <h3>Orchestration and API</h3>
             <p>
               The final orchestration composes the grounded answer and exposes it
@@ -1094,6 +1602,7 @@
       const buttonLabel = submitButton.querySelector(".button-label");
       const feedback = document.querySelector("#feedback");
       const resultSection = document.querySelector("#resultSection");
+      const skeletonSection = document.querySelector("#skeletonSection");
       const apiStatus = document.querySelector("#apiStatus");
 
       const resultFields = {
@@ -1122,6 +1631,8 @@
           ? "Finding a passage…"
           : "Find a passage";
         questionInput.setAttribute("aria-busy", String(isLoading));
+        skeletonSection.dataset.visible = String(isLoading);
+        skeletonSection.setAttribute("aria-hidden", String(!isLoading));
       }
 
       function updateCharacterCount() {
@@ -1129,6 +1640,8 @@
       }
 
       function showResult(data) {
+        skeletonSection.dataset.visible = "false";
+        skeletonSection.setAttribute("aria-hidden", "true");
         resultFields.message.textContent = data.message;
         resultFields.id.textContent = data.passage.id;
         resultFields.sanskrit.textContent = data.passage.sanskrit;
@@ -1177,6 +1690,7 @@
         feedback.textContent = "";
         resultSection.dataset.visible = "false";
         setLoading(true);
+        skeletonSection.scrollIntoView({ behavior: "smooth", block: "start" });
 
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 300000);
@@ -1246,8 +1760,53 @@
         });
       });
 
+      // Scroll reveal via IntersectionObserver. No scroll listeners, and only
+      // transform and opacity are animated so the work stays on the compositor.
+      function setupScrollReveal() {
+        const targets = document.querySelectorAll("[data-reveal]");
+        const prefersReduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        );
+
+        if (
+          !targets.length ||
+          prefersReduced.matches ||
+          !("IntersectionObserver" in window)
+        ) {
+          return;
+        }
+
+        document.documentElement.classList.add("has-reveal");
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              const peers = entry.target.parentElement
+                ? Array.from(
+                    entry.target.parentElement.querySelectorAll(
+                      ":scope > [data-reveal]"
+                    )
+                  )
+                : [];
+              const index = Math.max(0, peers.indexOf(entry.target));
+              entry.target.style.setProperty(
+                "--reveal-delay",
+                `${Math.min(index, 7) * 70}ms`
+              );
+              entry.target.classList.add("is-revealed");
+              observer.unobserve(entry.target);
+            });
+          },
+          { threshold: 0.12, rootMargin: "0px 0px -6% 0px" }
+        );
+
+        targets.forEach((target) => observer.observe(target));
+      }
+
       updateCharacterCount();
       checkApiHealth();
+      setupScrollReveal();
     </script>
   </body>
 </html>
