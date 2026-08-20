@@ -272,6 +272,13 @@ def generate_passage_message(used_verse_ids, selected):
     )
 
 
+def format_passage_message(passage_message):
+    return (
+        f"{passage_message['principle']} "
+        f"Practical application: {passage_message['application']}"
+    )
+
+
 def generate_grounded_answer(question, selected):
     used_verse_ids = select_verse_ids(
         question,
@@ -282,22 +289,8 @@ def generate_grounded_answer(question, selected):
         selected,
     )
 
-    if len(used_verse_ids) == 1:
-        introduction = (
-            "A related principle from the selected passage is:"
-        )
-    else:
-        introduction = (
-            "Related principles from the selected passages are:"
-        )
-
-    message = (
-        f"{introduction} {passage_message['principle']} "
-        f"Practical application: {passage_message['application']}"
-    )
-
     return {
-        "message": message,
+        "message": format_passage_message(passage_message),
         "used_verse_ids": used_verse_ids,
     }
 
@@ -378,22 +371,12 @@ def answer_question(question):
     timings["final_answer_generation"] = elapsed
     print(f"final answer generation: {elapsed:.2f}s")
 
-    if len(used_verse_ids) == 1:
-        introduction = (
-            "A related principle from the selected passage is:"
-        )
-    else:
-        introduction = (
-            "Related principles from the selected passages are:"
-        )
-
     total_seconds = time.perf_counter() - started_at
     timings["total_pipeline"] = total_seconds
 
     answer = {
         "message": (
-            f"{introduction} {passage_message['principle']} "
-            f"Practical application: {passage_message['application']}"
+            format_passage_message(passage_message)
         ),
         "used_verse_ids": used_verse_ids,
         "timings": timings,

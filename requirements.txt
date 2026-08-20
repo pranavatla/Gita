@@ -3,7 +3,6 @@ uvicorn==0.52.2
 boto3==1.43.72
 botocore[crt]==1.43.72
 opensearch-py==3.2.0
-torch==2.13.0
 transformers==5.15.0
 pydantic==2.13.4
 awscrt==0.36.0
