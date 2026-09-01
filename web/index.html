@@ -7,7 +7,7 @@
       name="description"
       content="An end-to-end AWS-backed Bhagavad Gita RAG system built over 700 verses."
     />
-    <title>Bhagavad Gita RAG · AWS Bedrock and OpenSearch</title>
+    <title>Bhagavad Gita RAG · Bedrock and Local Vector Search</title>
 
     <meta name="theme-color" content="#f6f0e4" />
     <meta property="og:type" content="website" />
@@ -15,13 +15,13 @@
     <meta property="og:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
     <meta
       property="og:description"
-      content="An AWS-backed retrieval-augmented generation system over the Bhagavad Gita using Amazon Bedrock, OpenSearch Serverless, and a local BGE reranker."
+      content="An AWS-backed retrieval-augmented generation system over the Bhagavad Gita using Amazon Bedrock, a local vector cache, and a local BGE reranker."
     />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
     <meta
       name="twitter:description"
-      content="AWS-backed RAG over the Bhagavad Gita: Bedrock query intelligence, OpenSearch retrieval, and local reranking return a grounded answer with the original Sanskrit."
+      content="AWS-backed RAG over the Bhagavad Gita: Bedrock query intelligence, local vector retrieval, and local reranking return a grounded answer with the original Sanskrit."
     />
 
     <link
@@ -336,10 +336,30 @@
          cell is wider and carries a tint, the other two are open on the page
          and separated by hairlines rather than boxes. */
       .figures {
+        position: relative;
+        overflow: hidden;
         display: grid;
         grid-template-columns: 1.4fr 1fr 1fr;
-        margin-top: 96px;
+        margin-top: 34px;
         border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        border-radius: var(--r-container);
+        background:
+          linear-gradient(90deg, rgba(246, 240, 228, 0.82), rgba(246, 240, 228, 0.62)),
+          var(--backdrop);
+        background-position: center 45%;
+        background-size: cover;
+        box-shadow: var(--shadow-sm);
+        isolation: isolate;
+      }
+
+      .figures::before {
+        position: absolute;
+        z-index: -1;
+        inset: 0;
+        content: "";
+        background: rgba(255, 253, 248, 0.42);
+        backdrop-filter: blur(5px) saturate(0.9);
       }
 
       .figure {
@@ -397,7 +417,7 @@
       .figure-note {
         max-width: 34ch;
         margin-bottom: 0;
-        color: var(--muted);
+        color: var(--ink-soft);
         font-size: 13px;
         line-height: 1.6;
         text-wrap: pretty;
@@ -1287,7 +1307,7 @@
         <span class="brand-mark" aria-hidden="true">गीता</span>
         <span class="brand-copy">
           <strong>Bhagavad Gita RAG</strong>
-          <span>Bedrock + OpenSearch</span>
+          <span>Bedrock + local vector search</span>
         </span>
       </a>
       <div class="api-status" id="apiStatus" data-state="checking" role="status">
@@ -1362,31 +1382,6 @@
 
           <p class="feedback" id="feedback" role="alert" aria-live="polite"></p>
         </form>
-      </section>
-
-      <section class="figures" aria-label="What the system indexes and searches">
-        <article class="figure figure-lead" data-reveal>
-          <span class="figure-value">700</span>
-          <h2 class="figure-label">Verses indexed</h2>
-          <p class="figure-note">
-            Every verse enriched with themes and translation text before it
-            reaches the vector index.
-          </p>
-        </article>
-        <article class="figure" data-reveal>
-          <span class="figure-value">4</span>
-          <h2 class="figure-label">Semantic facets per question</h2>
-          <p class="figure-note">
-            Nova Lite decomposes one situation into separate searches.
-          </p>
-        </article>
-        <article class="figure" data-reveal>
-          <span class="figure-value">20</span>
-          <h2 class="figure-label">Candidates reranked</h2>
-          <p class="figure-note">
-            A local BGE cross-encoder scores them down to the best four.
-          </p>
-        </article>
       </section>
 
       <section
@@ -1487,13 +1482,40 @@
         </div>
       </section>
 
+      <section class="figures" aria-label="What the system indexes and searches">
+        <article class="figure figure-lead" data-reveal>
+          <span class="figure-value">700</span>
+          <h2 class="figure-label">Verses cached locally</h2>
+          <p class="figure-note">
+            Every Bhagavad Gita verse keeps its translation, metadata, and
+            precomputed vector ready in memory for fast search.
+          </p>
+        </article>
+        <article class="figure" data-reveal>
+          <span class="figure-value">3</span>
+          <h2 class="figure-label">Semantic phrases generated</h2>
+          <p class="figure-note">
+            Nova Lite rewrites one real situation into focused search phrases,
+            while fixed domain terms add Gita-specific concepts.
+          </p>
+        </article>
+        <article class="figure" data-reveal>
+          <span class="figure-value">8</span>
+          <h2 class="figure-label">Candidates reranked</h2>
+          <p class="figure-note">
+            The local BGE cross-encoder compares the strongest candidates with
+            the original question and keeps the best four.
+          </p>
+        </article>
+      </section>
+
       <section class="pipeline-section" aria-labelledby="pipelineTitle">
         <div class="pipeline-intro" data-reveal>
           <div>
             <h2 id="pipelineTitle">Every stage of the RAG pipeline</h2>
           </div>
           <p class="pipeline-intro-copy">
-            The production path combines Amazon Bedrock, OpenSearch Serverless,
+            The production path combines Amazon Bedrock, a local vector cache,
             deterministic retrieval controls, and a local BGE reranker. Each
             stage does one narrow job well, from translating the question into
             search concepts to validating the final evidence-backed answer.
@@ -1517,7 +1539,7 @@
           <article class="pipeline-card" data-reveal>
             <h3>Query intelligence</h3>
             <p>
-              Amazon Nova Lite decomposes the scenario into four semantic facets
+              Amazon Nova Lite decomposes the scenario into three semantic phrases
               while a controlled domain map adds source-language concepts and synonyms.
             </p>
             <div class="function-list">
@@ -1530,13 +1552,14 @@
           <article class="pipeline-card" data-reveal>
             <h3>Vector retrieval</h3>
             <p>
-              Titan embeddings search the OpenSearch Serverless vector index across
-              the original question, generated facets, and deterministic domain expansions.
+              Titan embeds the question, then the app searches the local 700-verse
+              vector cache across the original question, generated phrases, and
+              deterministic domain expansions.
             </p>
             <div class="function-list">
               <code>retrieve_candidates()</code>
               <code>Titan Embed v2</code>
-              <code>OpenSearch Serverless</code>
+              <code>local_vector_search.py</code>
             </div>
           </article>
 
@@ -1544,20 +1567,20 @@
             <h3>Rank fusion</h3>
             <p>
               Reciprocal Rank Fusion merges results from every search, rewards
-              repeated evidence, removes duplicate verses, and keeps the top 20 candidates.
+              repeated evidence, removes duplicate verses, and keeps the top 8 candidates.
             </p>
             <div class="function-list">
               <code>RRF_CONSTANT = 60</code>
               <code>RESULTS_PER_QUERY = 5</code>
-              <code>MAX_RERANK_CANDIDATES = 20</code>
+              <code>MAX_RERANK_CANDIDATES = 8</code>
             </div>
           </article>
 
           <article class="pipeline-card" data-reveal>
             <h3>Neural reranking</h3>
             <p>
-              A cached local BGE cross-encoder scores every candidate against the original
-              question and its strongest auxiliary search, then returns the best four passages.
+              A cached local BGE cross-encoder scores each candidate against the original
+              question, then returns the best four passages.
             </p>
             <div class="function-list">
               <code>load_reranker()</code>
@@ -1610,8 +1633,8 @@
     </main>
 
     <footer class="site-footer shell">
-      <span>Bhagavad Gita RAG • AWS retrieval with local reranking</span>
-      <span>Python · Amazon Bedrock · OpenSearch Serverless · BGE · FastAPI</span>
+      <span>Bhagavad Gita RAG • Local vector retrieval with local reranking</span>
+      <span>Python · Amazon Bedrock · Titan Embed v2 · BGE · FastAPI</span>
     </footer>
 
     <script>
