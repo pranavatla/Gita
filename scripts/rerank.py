@@ -281,6 +281,7 @@ def load_reranker():
 
 def rerank_globally(search_queries, candidates):
     tokenizer, model, device = load_reranker()
+    original_query = search_queries[0]
 
     candidate_texts = [
         (
@@ -291,15 +292,9 @@ def rerank_globally(search_queries, candidates):
         for candidate in candidates
     ]
 
-    pairs = [
-        (query, candidate_text)
-        for query in search_queries
-        for candidate_text in candidate_texts
-    ]
-
     inputs = tokenizer(
-        [pair[0] for pair in pairs],
-        [pair[1] for pair in pairs],
+        [original_query] * len(candidate_texts),
+        candidate_texts,
         padding=True,
         truncation=True,
         max_length=512,
@@ -310,47 +305,27 @@ def rerank_globally(search_queries, candidates):
         scores = model(
             **inputs,
             return_dict=True,
-        ).logits.view(
-            len(search_queries),
-            len(candidates),
-        ).float().cpu()
-
-    original_scores = scores[0]
-    auxiliary_scores, auxiliary_indexes = scores[1:].max(
-        dim=0,
-    )
-    combined_scores = (
-        original_scores + auxiliary_scores
-    ) / 2
+        ).logits.view(-1).float().cpu()
 
     candidate_indexes = torch.argsort(
-        combined_scores,
+        scores,
         descending=True,
     )[:FINAL_RESULTS].tolist()
 
     selected = []
 
     for candidate_index in candidate_indexes:
-        best_query_index = (
-            auxiliary_indexes[candidate_index].item() + 1
-        )
-        combined_score = combined_scores[
-            candidate_index
-        ].item()
+        score = scores[candidate_index].item()
 
         selected.append(
             {
                 "candidate": candidates[candidate_index],
-                "best_query": search_queries[best_query_index],
-                "original_score": original_scores[
-                    candidate_index
-                ].item(),
-                "auxiliary_score": auxiliary_scores[
-                    candidate_index
-                ].item(),
-                "combined_score": combined_score,
+                "best_query": original_query,
+                "original_score": score,
+                "auxiliary_score": score,
+                "combined_score": score,
                 "normalized_score": torch.sigmoid(
-                    torch.tensor(combined_score)
+                    torch.tensor(score)
                 ).item(),
             }
         )
