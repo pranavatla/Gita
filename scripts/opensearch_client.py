@@ -1,4 +1,6 @@
 import os
+import time
+from functools import lru_cache
 
 import boto3
 from opensearchpy import (
@@ -24,6 +26,7 @@ OPENSEARCH_INDEX = os.environ.get(
 )
 
 
+@lru_cache(maxsize=1)
 def get_opensearch_client():
     credentials = boto3.Session().get_credentials()
     auth = AWSV4SignerAuth(credentials, AWS_REGION, "aoss")
@@ -38,10 +41,14 @@ def get_opensearch_client():
     )
 
 
-def search_similar_verses(query_text, k=10):
+def search_similar_verses(query_text, k=10, include_timings=False):
     client = get_opensearch_client()
-    query_vector = embed_texts([query_text])[0]
 
+    embedding_started = time.perf_counter()
+    query_vector = embed_texts([query_text])[0]
+    embedding_seconds = time.perf_counter() - embedding_started
+
+    search_started = time.perf_counter()
     response = client.search(
         index=OPENSEARCH_INDEX,
         body={
@@ -64,6 +71,7 @@ def search_similar_verses(query_text, k=10):
             },
         },
     )
+    opensearch_seconds = time.perf_counter() - search_started
 
     hits = []
 
@@ -83,5 +91,14 @@ def search_similar_verses(query_text, k=10):
                 "score": hit["_score"],
             }
         )
+
+    if include_timings:
+        return {
+            "hits": hits,
+            "timings": {
+                "embedding": embedding_seconds,
+                "opensearch": opensearch_seconds,
+            },
+        }
 
     return hits

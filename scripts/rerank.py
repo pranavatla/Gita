@@ -1,12 +1,13 @@
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
 try:
-    from .opensearch_client import search_similar_verses
+    from .local_vector_search import search_similar_verses
 except ImportError:
-    from opensearch_client import search_similar_verses
+    from local_vector_search import search_similar_verses
 
 try:
     from .bedrock_client import converse_text, parse_json_text
@@ -201,12 +202,21 @@ def retrieve_candidates(question, generated_queries):
 
     candidates = {}
 
-    for rank, query in enumerate(search_queries, start=1):
-        results = search_similar_verses(
-            query,
-            k=RESULTS_PER_QUERY,
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        search_results = list(
+            executor.map(
+                lambda query: search_similar_verses(
+                    query,
+                    k=RESULTS_PER_QUERY,
+                ),
+                search_queries,
+            )
         )
 
+    for rank, (query, results) in enumerate(
+        zip(search_queries, search_results),
+        start=1,
+    ):
         for result_index, item in enumerate(results, start=1):
             verse_id = item["id"]
 

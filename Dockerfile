@@ -14,6 +14,7 @@ RUN python -c "from transformers import AutoTokenizer, AutoModelForSequenceClass
 
 COPY scripts /app/scripts
 COPY web /app/web
+COPY data/vector_cache /app/data/vector_cache
 
 EXPOSE 8000
 
