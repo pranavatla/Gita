@@ -3,6 +3,7 @@ from threading import Lock
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from answer import answer_question
@@ -19,6 +20,7 @@ app = FastAPI(
 
 pipeline_lock = Lock()
 web_index = Path(__file__).resolve().parent.parent / "web" / "index.html"
+app.mount("/assets", StaticFiles(directory=web_index.parent / "assets"), name="assets")
 
 
 class QuestionRequest(BaseModel):
