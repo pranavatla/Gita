@@ -33,7 +33,7 @@ RESULTS_PER_QUERY = 10
 MAX_RERANK_CANDIDATES = 20
 FINAL_RESULTS = 6
 RRF_CONSTANT = 60
-NUM_FACET_QUERIES = 3
+NUM_FACET_QUERIES = 4
 
 DOMAIN_EXPANSIONS = {
     "desire": [
@@ -97,12 +97,38 @@ DOMAIN_EXPANSIONS = {
         "neither too much nor too little sleep",
         "balanced habits relieve material suffering",
     ],
+    "karma": [
+        "fruits and moral consequences of action",
+        "results of righteous and unrighteous action after death",
+    ],
+    "rebirth": [
+        "future birth shaped by conduct and consciousness",
+        "repeated adverse or demoniac births",
+        "degradation into lower conditions of existence",
+    ],
+    "wrong": [
+        "destructive demoniac conduct and its consequences",
+        "cruel envious harmful action leading to degradation",
+    ],
+    "wrongdoing": [
+        "destructive demoniac conduct and its consequences",
+        "cruel envious harmful action leading to degradation",
+    ],
+    "punishment": [
+        "adverse consequences and lower future births",
+        "degradation caused by destructive conduct",
+    ],
+    "punished": [
+        "adverse consequences and lower future births",
+        "degradation caused by destructive conduct",
+    ],
 }
 
 FACET_FIELDS = [
     "literal_action",
     "source_concepts",
     "consequence_or_remedy",
+    "ideal_evidence",
 ]
 
 QUERY_SCHEMA = {
@@ -111,24 +137,26 @@ QUERY_SCHEMA = {
         "literal_action": {"type": "string"},
         "source_concepts": {"type": "string"},
         "consequence_or_remedy": {"type": "string"},
+        "ideal_evidence": {"type": "string"},
     },
     "required": FACET_FIELDS,
 }
 
 def generate_search_queries(question):
     system_prompt = (
-        "Convert the user's scenario into exactly three distinct semantic "
-        "retrieval phrases. literal_action preserves what actually "
-        "happened. source_concepts translates modern wording into 3 to 6 "
-        "concise philosophical or scriptural concepts and useful synonyms, "
-        "such as lust, craving, attachment, anger, greed, prescribed duty, "
-        "detachment, or sense control when directly supported. "
-        "consequence_or_remedy "
-        "contains concise moral consequences and corrective principles "
-        "supported by the scenario; do not invent legal, social, financial, "
-        "or supernatural outcomes. Keep all three values short, distinct, "
-        "and useful for retrieval. Do not mention scriptures, verse numbers, "
-        "people, or facts absent from the scenario."
+        "Transform the user's natural question into exactly four distinct "
+        "retrieval phrases for a Bhagavad Gita corpus. literal_action "
+        "preserves what the user is asking or describing. source_concepts "
+        "translates modern wording into 3 to 6 relevant Gita concepts and "
+        "synonyms. consequence_or_remedy describes the doctrinal consequence "
+        "or corrective principle being sought. For theological questions, "
+        "include relevant concepts such as karma, fruits of action, after "
+        "death, rebirth, adverse birth, degradation, demoniac conduct, or "
+        "liberation when supported by the question. ideal_evidence is a short "
+        "HyDE-style description of what an ideal answering passage would say, "
+        "using likely corpus vocabulary without inventing a quotation, verse "
+        "number, or doctrinal conclusion. Keep the four values distinct and "
+        "optimized for retrieval. Do not mention specific verses."
     )
 
     for attempt in range(1, 4):
@@ -184,6 +212,10 @@ def expand_domain_concepts(question):
     for word in words:
         if word.endswith("ies") and len(word) > 3:
             normalized_words.add(word[:-3] + "y")
+        elif word.endswith("ing") and len(word) > 5:
+            normalized_words.add(word[:-3])
+        elif word.endswith("ed") and len(word) > 4:
+            normalized_words.add(word[:-2])
         elif word.endswith("s") and len(word) > 3:
             normalized_words.add(word[:-1])
 
@@ -274,7 +306,33 @@ def retrieve_candidates(question, generated_queries):
         ),
     )
 
-    return search_queries, ordered_candidates[:MAX_RERANK_CANDIDATES]
+    retained_candidates = ordered_candidates[:MAX_RERANK_CANDIDATES]
+
+    print(
+        "retrieval trace:",
+        json.dumps(
+            {
+                "queries": search_queries,
+                "fused_candidates": [
+                    {
+                        "id": candidate["id"],
+                        "rrf_score": round(candidate["rrf_score"], 6),
+                        "sources": sorted(
+                            {
+                                match["retrieval_type"]
+                                for match in candidate["matches"]
+                            }
+                        ),
+                        "match_count": len(candidate["matches"]),
+                    }
+                    for candidate in retained_candidates
+                ],
+            },
+            ensure_ascii=False,
+        ),
+    )
+
+    return search_queries, retained_candidates
 
 
 @lru_cache(maxsize=1)
@@ -354,6 +412,19 @@ def rerank_globally(search_queries, candidates):
                 ).item(),
             }
         )
+
+    print(
+        "reranking trace:",
+        json.dumps(
+            [
+                {
+                    "id": result["candidate"]["id"],
+                    "score": round(result["combined_score"], 6),
+                }
+                for result in selected
+            ]
+        ),
+    )
 
     return selected, device
 
