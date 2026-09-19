@@ -15,13 +15,13 @@
     <meta property="og:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
     <meta
       property="og:description"
-      content="An AWS-backed retrieval-augmented generation system over the Bhagavad Gita using Amazon Bedrock, a local vector cache, and a local BGE reranker."
+      content="An AWS-backed retrieval-augmented generation system over the Bhagavad Gita using Amazon Bedrock, hybrid retrieval, RRF fusion, and Claude evidence reranking."
     />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
     <meta
       name="twitter:description"
-      content="AWS-backed RAG over the Bhagavad Gita: Bedrock query intelligence, local vector retrieval, and local reranking return a grounded answer with the original Sanskrit."
+      content="AWS-backed RAG over the Bhagavad Gita: Bedrock query intelligence, hybrid retrieval, RRF fusion, and Claude evidence reranking return a grounded answer with the original Sanskrit."
     />
 
     <link
@@ -239,7 +239,7 @@
               <span class="timing-item-value" id="timingReranking"></span>
             </div>
             <div class="timing-item">
-              <span class="timing-item-label">Verse selection</span>
+              <span class="timing-item-label">Selection</span>
               <span class="timing-item-value" id="timingVerseSelection"></span>
             </div>
             <div class="timing-item">
@@ -265,11 +265,11 @@
               <pre class="trace-output" id="traceFused"></pre>
             </div>
             <div>
-              <h3>BGE reranked candidates</h3>
+              <h3>Claude evidence ranking</h3>
               <pre class="trace-output" id="traceReranked"></pre>
             </div>
             <div>
-              <h3>Claude selection</h3>
+              <h3>Selected grounding verse</h3>
               <pre class="trace-output" id="traceSelected"></pre>
             </div>
           </div>
@@ -300,8 +300,8 @@
           <span class="figure-value">20</span>
           <h2 class="figure-label">Candidates reranked</h2>
           <p class="figure-note">
-            The local BGE cross-encoder compares the strongest candidates with
-            the question plus intent facets and keeps the best six.
+            Claude compares all 20 fused candidates with the natural question
+            and keeps the six strongest pieces of evidence.
           </p>
         </article>
       </section>
@@ -313,7 +313,7 @@
           </div>
           <p class="pipeline-intro-copy">
             The production path combines Amazon Bedrock, a local vector cache,
-            deterministic retrieval controls, and a local BGE reranker. Each
+            deterministic retrieval controls, RRF fusion, and Claude evidence reranking. Each
             stage does one narrow job well, from translating the question into
             search concepts to validating the final evidence-backed answer.
           </p>
@@ -374,28 +374,28 @@
           </article>
 
           <article class="pipeline-card" data-reveal>
-            <h3>Neural reranking</h3>
+            <h3>Evidence reranking</h3>
             <p>
-              A cached local BGE cross-encoder scores each candidate against the original
-              question plus its intent facets, then returns the best six passages.
+              Claude ranks all 20 fused candidates against the natural question,
+              prioritizing direct doctrinal evidence over keyword overlap.
             </p>
             <div class="function-list">
-              <code>load_reranker()</code>
-              <code>rerank_globally()</code>
-              <code>bge-reranker-v2-m3</code>
+              <code>rerank_and_select()</code>
+              <code>doctrinal entailment</code>
+              <code>Claude Sonnet 4.6</code>
             </div>
           </article>
 
           <article class="pipeline-card" data-reveal>
-            <h3>Evidence selection</h3>
+            <h3>Grounding selection</h3>
             <p>
-              A structured Bedrock call selects exactly one allowed verse ID. Python
-              validation rejects missing, duplicated, or unsupported references.
+              The strongest verse in Claude's validated ranking becomes the single
+              grounding source. No second model decision can discard better evidence.
             </p>
             <div class="function-list">
-              <code>select_verse_ids()</code>
-              <code>validate_selection()</code>
-              <code>Claude Sonnet 4.6</code>
+              <code>ranked_verse_ids[0]</code>
+              <code>validate_ranking()</code>
+              <code>one supporting verse</code>
             </div>
           </article>
 
@@ -516,9 +516,10 @@
         resultFields.timingReranking.textContent = formatSeconds(
           data.timings.reranking
         );
-        resultFields.timingVerseSelection.textContent = formatSeconds(
-          data.timings.verse_selection
-        );
+        resultFields.timingVerseSelection.textContent =
+          data.timings.verse_selection === 0
+            ? "Included above"
+            : formatSeconds(data.timings.verse_selection);
         resultFields.timingFinalAnswerGeneration.textContent = formatSeconds(
           data.timings.final_answer_generation
         );
@@ -535,7 +536,7 @@
           .join("\n");
         resultFields.traceReranked.textContent = data.trace.reranked_candidates
           .map((candidate, index) =>
-            `${index + 1}. ${candidate.id} · BGE ${candidate.score.toFixed(4)}`
+            `${candidate.rank}. ${candidate.id}`
           )
           .join("\n");
         resultFields.traceSelected.textContent =

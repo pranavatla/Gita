@@ -2,7 +2,6 @@ import json
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from functools import lru_cache
 
 try:
     from .local_vector_search import (
@@ -20,14 +19,6 @@ try:
 except ImportError:
     from bedrock_client import converse_text, parse_json_text
 
-import torch
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-)
-
-
-RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
 
 RESULTS_PER_QUERY = 10
 MAX_RERANK_CANDIDATES = 20
@@ -335,149 +326,21 @@ def retrieve_candidates(question, generated_queries):
     return search_queries, retained_candidates
 
 
-@lru_cache(maxsize=1)
-def load_reranker():
-    tokenizer = AutoTokenizer.from_pretrained(
-        RERANKER_MODEL,
-        local_files_only=True,
-    )
-    model = AutoModelForSequenceClassification.from_pretrained(
-        RERANKER_MODEL,
-        local_files_only=True,
-    )
 
-    device = (
-        "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
-    )
-    model.to(device)
-    model.eval()
-
-    return tokenizer, model, device
-
-
-def rerank_globally(search_queries, candidates):
-    tokenizer, model, device = load_reranker()
-    original_query = search_queries[0]
-    intent_facets = search_queries[1 : 1 + NUM_FACET_QUERIES]
-    rerank_query = (
-        f"{original_query} "
-        f"Key intent facets: {'; '.join(intent_facets)}"
-    )
-
-    candidate_texts = [
-        (
-            f"Translation: {candidate['document']} "
-            "Themes: "
-            f"{candidate['metadata'].get('themes', '')}"
-        )
-        for candidate in candidates
-    ]
-
-    inputs = tokenizer(
-        [rerank_query] * len(candidate_texts),
-        candidate_texts,
-        padding=True,
-        truncation=True,
-        max_length=512,
-        return_tensors="pt",
-    ).to(device)
-
-    with torch.no_grad():
-        scores = model(
-            **inputs,
-            return_dict=True,
-        ).logits.view(-1).float().cpu()
-
-    candidate_indexes = torch.argsort(
-        scores,
-        descending=True,
-    )[:FINAL_RESULTS].tolist()
-
-    selected = []
-
-    for candidate_index in candidate_indexes:
-        score = scores[candidate_index].item()
-
-        selected.append(
-            {
-                "candidate": candidates[candidate_index],
-                "best_query": original_query,
-                "original_score": score,
-                "auxiliary_score": score,
-                "combined_score": score,
-                "normalized_score": torch.sigmoid(
-                    torch.tensor(score)
-                ).item(),
-            }
-        )
-
-    print(
-        "reranking trace:",
-        json.dumps(
-            [
-                {
-                    "id": result["candidate"]["id"],
-                    "score": round(result["combined_score"], 6),
-                }
-                for result in selected
-            ]
-        ),
-    )
-
-    return selected, device
-
-
-def print_results(
-    question,
-    search_queries,
-    selected,
-    device,
-):
+def print_results(question, search_queries, candidates):
     print(f"\nOriginal question: {question}\n")
     print("Searches used:")
+
     for index, query in enumerate(search_queries, start=1):
         print(f"  {index}. {query}")
 
-    print(f"\nReranker: {RERANKER_MODEL} on {device}")
-    print(
-        "These are related candidate principles. "
-        "The scores rank passages; they are not confidence values "
-        "and do not prove an exact verse match."
-    )
+    print("\nRRF fused candidates:")
 
-    for rank, result in enumerate(selected, start=1):
-        candidate = result["candidate"]
-        metadata = candidate["metadata"]
-
-        print("\n" + "=" * 70)
-        print(f"Reranked position: {rank}")
-        print(f"Reference: {candidate['id']}")
-        print(f"Best auxiliary query: {result['best_query']}")
+    for rank, candidate in enumerate(candidates, start=1):
         print(
-            "Original-question BGE score: "
-            f"{result['original_score']:.4f}"
+            f"  {rank}. {candidate['id']} "
+            f"(RRF {candidate['rrf_score']:.6f})"
         )
-        print(
-            "Best auxiliary BGE score: "
-            f"{result['auxiliary_score']:.4f}"
-        )
-        print(
-            "Combined BGE score: "
-            f"{result['combined_score']:.4f}"
-        )
-
-        print("\nOriginal Sanskrit:")
-        print(metadata["sanskrit"])
-
-        print("\nTransliteration:")
-        print(metadata["transliteration"])
-
-        print("\nEnglish:")
-        print(candidate["document"])
-
-    print("\n" + "=" * 70)
 
 
 def main():
@@ -492,17 +355,7 @@ def main():
         question,
         list(facet_queries.values()),
     )
-    selected, device = rerank_globally(
-        search_queries,
-        candidates,
-    )
-
-    print_results(
-        question,
-        search_queries,
-        selected,
-        device,
-    )
+    print_results(question, search_queries, candidates)
 
 
 if __name__ == "__main__":

@@ -6,26 +6,23 @@ from bedrock_client import converse_text, parse_json_text
 
 from rerank import (
     generate_search_queries,
-    rerank_globally,
     retrieve_candidates,
 )
 
 
-SELECTION_SCHEMA = {
+RERANK_LIMIT = 6
+
+RERANK_SCHEMA = {
     "type": "object",
     "properties": {
-        "used_verse_ids": {
+        "ranked_verse_ids": {
             "type": "array",
-            "items": {
-                "type": "string",
-            },
-            "minItems": 1,
-            "maxItems": 1,
+            "items": {"type": "string"},
+            "minItems": RERANK_LIMIT,
+            "maxItems": RERANK_LIMIT,
         },
     },
-    "required": [
-        "used_verse_ids",
-    ],
+    "required": ["ranked_verse_ids"],
 }
 
 MESSAGE_SCHEMA = {
@@ -45,17 +42,17 @@ MESSAGE_SCHEMA = {
 }
 
 
-def build_context(selected):
+def build_candidate_context(candidates):
     passages = []
 
-    for result in selected:
-        candidate = result["candidate"]
-
+    for candidate in candidates:
+        themes = candidate["metadata"].get("themes", "")
         passages.append(
             "\n".join(
                 [
                     f"ID: {candidate['id']}",
                     f"English translation: {candidate['document']}",
+                    f"Themes: {themes}",
                 ]
             )
         )
@@ -63,31 +60,137 @@ def build_context(selected):
     return "\n\n".join(passages)
 
 
-def validate_selection(result, allowed_ids):
-    used_ids = result.get("used_verse_ids")
+def build_context(selected):
+    return build_candidate_context(
+        [result["candidate"] for result in selected]
+    )
 
-    if not isinstance(used_ids, list):
+
+def validate_ranking(result, allowed_ids):
+    ranked_ids = result.get("ranked_verse_ids")
+
+    if not isinstance(ranked_ids, list):
         return False
 
     cleaned_ids = [
         verse_id.strip()
-        for verse_id in used_ids
+        for verse_id in ranked_ids
         if isinstance(verse_id, str) and verse_id.strip()
     ]
-    cleaned_ids = list(dict.fromkeys(cleaned_ids))
 
-    if len(cleaned_ids) != 1:
+    if len(cleaned_ids) != RERANK_LIMIT:
         return False
 
-    if any(
-        verse_id not in allowed_ids
-        for verse_id in cleaned_ids
-    ):
+    if len(set(cleaned_ids)) != RERANK_LIMIT:
         return False
 
-    result["used_verse_ids"] = cleaned_ids
+    if any(verse_id not in allowed_ids for verse_id in cleaned_ids):
+        return False
 
+    result["ranked_verse_ids"] = cleaned_ids
     return True
+
+
+def rerank_and_select(question, candidates):
+    context = build_candidate_context(candidates)
+    allowed_ids = {candidate["id"] for candidate in candidates}
+
+    system_prompt = (
+        "You are the evidence reranker in a Bhagavad Gita RAG pipeline. "
+        "Rank exactly six supplied passages by how directly their English "
+        "translations provide evidence for the user's actual question. "
+        "Judge doctrinal entailment and the requested relationship, not mere "
+        "keyword overlap. A passage that explicitly connects harmful conduct "
+        "to consequences, future birth, degradation, or divine action should "
+        "outrank a passage that only mentions karma, action, death, duty, or "
+        "rebirth separately. Penalize passages that discuss a nearby topic "
+        "without answering the question. Do not answer the user and do not "
+        "invent verses. Return six unique exact IDs, strongest first. The "
+        "first ID is the passage selected to ground the final answer."
+    )
+
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "text": (
+                        f"User question:\n{question}\n\n"
+                        f"Retrieved candidate passages:\n{context}"
+                    )
+                }
+            ],
+        },
+    ]
+
+    for attempt in range(1, 4):
+        raw_content = converse_text(
+            messages=messages,
+            system_prompt=(
+                f"{system_prompt} Return only valid JSON matching this "
+                f"schema: {json.dumps(RERANK_SCHEMA)}"
+            ),
+            max_tokens=250,
+            temperature=0,
+        )
+
+        try:
+            result = parse_json_text(raw_content)
+        except json.JSONDecodeError:
+            result = {}
+
+        if validate_ranking(result, allowed_ids):
+            ranked_ids = result["ranked_verse_ids"]
+            candidates_by_id = {
+                candidate["id"]: candidate
+                for candidate in candidates
+            }
+            selected = [
+                {
+                    "candidate": candidates_by_id[verse_id],
+                    "rank": rank,
+                }
+                for rank, verse_id in enumerate(ranked_ids, start=1)
+            ]
+            print(
+                "Claude evidence reranking trace:",
+                json.dumps(
+                    [
+                        {
+                            "id": item["candidate"]["id"],
+                            "rank": item["rank"],
+                        }
+                        for item in selected
+                    ]
+                ),
+            )
+            return selected
+
+        print(
+            f"Invalid Claude evidence ranking, retrying "
+            f"({attempt}/3)"
+        )
+        messages.extend(
+            [
+                {
+                    "role": "assistant",
+                    "content": [{"text": raw_content}],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "text": (
+                                "Return exactly six unique exact IDs from "
+                                "the supplied passages, strongest first."
+                            )
+                        }
+                    ],
+                },
+            ]
+        )
+
+    raise RuntimeError("Could not generate a valid evidence ranking")
 
 
 def validate_message(result):
@@ -110,84 +213,6 @@ def validate_message(result):
     result["explanation"] = explanation
 
     return True
-
-
-def select_verse_ids(question, selected):
-    context = build_context(selected)
-
-    allowed_ids = {
-        result["candidate"]["id"]
-        for result in selected
-    }
-
-    system_prompt = (
-        "Select exactly one supplied Bhagavad Gita passage: the passage "
-        "that most directly supports the user's situation. This is passage "
-        "selection only; do not answer, explain, judge, or rewrite the "
-        "situation. Return exactly one exact ID from the supplied passages "
-        "in used_verse_ids."
-    )
-
-    user_prompt = (
-        f"User situation:\n{question}\n\n"
-        f"Candidate passages:\n{context}"
-    )
-
-    messages = [
-        {
-            "role": "user",
-            "content": [{"text": user_prompt}],
-        },
-    ]
-
-    for attempt in range(1, 4):
-        raw_content = converse_text(
-            messages=messages,
-            system_prompt=(
-                f"{system_prompt} Return only valid JSON matching this "
-                f"schema: {json.dumps(SELECTION_SCHEMA)}"
-            ),
-            max_tokens=200,
-            temperature=0,
-        )
-
-        try:
-            result = parse_json_text(raw_content)
-        except json.JSONDecodeError:
-            result = {}
-
-        if validate_selection(result, allowed_ids):
-            return result["used_verse_ids"]
-
-        print(
-            f"Invalid verse selection, retrying "
-            f"({attempt}/3)"
-        )
-
-        messages.extend(
-            [
-                {
-                    "role": "assistant",
-                    "content": [{"text": raw_content}],
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "text": (
-                                "The previous selection was invalid. Return "
-                                "exactly one exact ID from the supplied "
-                                "passages only."
-                            )
-                        }
-                    ],
-                },
-            ]
-        )
-
-    raise RuntimeError(
-        "Could not generate a valid verse selection"
-    )
 
 
 def generate_passage_message(question, used_verse_ids, selected):
@@ -292,23 +317,6 @@ def format_passage_message(passage_message):
     )
 
 
-def generate_grounded_answer(question, selected):
-    used_verse_ids = select_verse_ids(
-        question,
-        selected,
-    )
-    passage_message = generate_passage_message(
-        question,
-        used_verse_ids,
-        selected,
-    )
-
-    return {
-        "message": format_passage_message(passage_message),
-        "used_verse_ids": used_verse_ids,
-    }
-
-
 def print_answer(answer, selected):
     candidates_by_id = {
         result["candidate"]["id"]: result["candidate"]
@@ -359,22 +367,16 @@ def answer_question(question):
     print(f"retrieval: {elapsed:.2f}s")
 
     step_started_at = time.perf_counter()
-    selected, _ = rerank_globally(
-        search_queries,
-        candidates,
-    )
+    selected = rerank_and_select(question, candidates)
     elapsed = time.perf_counter() - step_started_at
     timings["reranking"] = elapsed
-    print(f"reranking: {elapsed:.2f}s")
-
-    step_started_at = time.perf_counter()
-    used_verse_ids = select_verse_ids(
-        question,
-        selected,
+    timings["verse_selection"] = 0.0
+    print(
+        f"Claude evidence reranking and selection: "
+        f"{elapsed:.2f}s"
     )
-    elapsed = time.perf_counter() - step_started_at
-    timings["verse_selection"] = elapsed
-    print(f"verse selection: {elapsed:.2f}s")
+
+    used_verse_ids = [selected[0]["candidate"]["id"]]
 
     step_started_at = time.perf_counter()
     passage_message = generate_passage_message(
@@ -415,7 +417,7 @@ def answer_question(question):
             "reranked_candidates": [
                 {
                     "id": result["candidate"]["id"],
-                    "score": result["combined_score"],
+                    "rank": result["rank"],
                 }
                 for result in selected
             ],

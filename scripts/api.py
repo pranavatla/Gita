@@ -56,7 +56,7 @@ class FusedCandidateTrace(BaseModel):
 
 class RerankedCandidateTrace(BaseModel):
     id: str
-    score: float
+    rank: int
 
 
 class RetrievalTraceResponse(BaseModel):
