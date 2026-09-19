@@ -88,6 +88,16 @@ DOMAIN_EXPANSIONS = {
         "neither too much nor too little sleep",
         "balanced habits relieve material suffering",
     ],
+    "guna": [
+        "three modes goodness passion ignorance",
+        "mode of goodness illuminating happiness knowledge",
+        "mode of passion desires longings material actions",
+        "mode of ignorance delusion indolence sleep",
+    ],
+    "spiritual": [
+        "whatever you do eat give perform as an offering to God",
+        "work as sacrifice for the Supreme remain free from bondage",
+    ],
     "karma": [
         "fruits and moral consequences of action",
         "results of righteous and unrighteous action after death",
@@ -220,7 +230,13 @@ def expand_domain_concepts(question):
 
 
 def retrieve_candidates(question, generated_queries):
-    domain_queries = expand_domain_concepts(question)
+    # Generated facets often translate natural language into Sanskrit terms
+    # such as sattva, rajas, tamas, or gunas. Apply deterministic corpus
+    # vocabulary bridges to both the original question and those facets so
+    # the matching English translations can enter the candidate set.
+    domain_queries = expand_domain_concepts(
+        " ".join([question, *generated_queries])
+    )
 
     search_queries = [
         question,

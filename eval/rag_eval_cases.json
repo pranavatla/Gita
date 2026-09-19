@@ -60,7 +60,8 @@
     "question": "How do I stay steady whether I succeed or fail?",
     "acceptable_verse_ids": [
       "BG2.48",
-      "BG2.38"
+      "BG2.38",
+      "BG4.22"
     ],
     "intent": "equanimity in success and failure"
   },
@@ -68,7 +69,8 @@
     "id": "simple_devotion",
     "question": "I do not have anything grand to offer spiritually. Does a simple offering matter?",
     "acceptable_verse_ids": [
-      "BG9.26"
+      "BG9.26",
+      "BG9.27"
     ],
     "intent": "simple devotion and offering"
   },
@@ -95,6 +97,7 @@
     "question": "How can I see people beyond status, education, caste, or background?",
     "acceptable_verse_ids": [
       "BG5.18",
+      "BG6.9",
       "BG6.29",
       "BG6.32"
     ],
@@ -136,7 +139,9 @@
       "BG14.5",
       "BG14.6",
       "BG14.7",
-      "BG14.8"
+      "BG14.8",
+      "BG14.9",
+      "BG14.10"
     ],
     "intent": "three gunas"
   },
@@ -194,7 +199,8 @@
     "acceptable_verse_ids": [
       "BG6.40",
       "BG6.41",
-      "BG6.43"
+      "BG6.43",
+      "BG6.45"
     ],
     "intent": "spiritual effort never wasted"
   },
@@ -204,7 +210,8 @@
     "acceptable_verse_ids": [
       "BG9.27",
       "BG3.30",
-      "BG5.10"
+      "BG5.10",
+      "BG3.9"
     ],
     "intent": "offering work"
   },
@@ -222,6 +229,7 @@
     "id": "foods_and_mind",
     "question": "Does the Gita connect food habits with the state of the mind?",
     "acceptable_verse_ids": [
+      "BG17.7",
       "BG17.8",
       "BG17.9",
       "BG17.10"
@@ -230,7 +238,7 @@
   },
   {
     "id": "humility_and_knowledge",
-    "question": "What qualities does the Gita associate with real knowledge?",
+    "question": "Does the Gita count humility, nonviolence, steadiness, and self-control as qualities of knowledge?",
     "acceptable_verse_ids": [
       "BG13.8",
       "BG13.9",
