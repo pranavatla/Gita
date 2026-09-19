@@ -6,3 +6,4 @@ opensearch-py==3.2.0
 transformers==5.15.0
 pydantic==2.13.4
 awscrt==0.36.0
+rank-bm25==0.2.2

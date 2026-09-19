@@ -5,9 +5,15 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
 try:
-    from .local_vector_search import search_similar_verses
+    from .local_vector_search import (
+        search_lexical_verses,
+        search_similar_verses,
+    )
 except ImportError:
-    from local_vector_search import search_similar_verses
+    from local_vector_search import (
+        search_lexical_verses,
+        search_similar_verses,
+    )
 
 try:
     from .bedrock_client import converse_text, parse_json_text
@@ -202,21 +208,34 @@ def retrieve_candidates(question, generated_queries):
 
     candidates = {}
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        search_results = list(
-            executor.map(
-                lambda query: search_similar_verses(
-                    query,
-                    k=RESULTS_PER_QUERY,
-                ),
-                search_queries,
+    search_requests = [
+        (query, retrieval_type)
+        for query in search_queries
+        for retrieval_type in ("semantic", "lexical")
+    ]
+
+    def run_search(request):
+        query, retrieval_type = request
+
+        if retrieval_type == "semantic":
+            results = search_similar_verses(
+                query,
+                k=RESULTS_PER_QUERY,
             )
+        else:
+            results = search_lexical_verses(
+                query,
+                k=RESULTS_PER_QUERY,
+            )
+
+        return query, retrieval_type, results
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        search_results = list(
+            executor.map(run_search, search_requests)
         )
 
-    for rank, (query, results) in enumerate(
-        zip(search_queries, search_results),
-        start=1,
-    ):
+    for query, retrieval_type, results in search_results:
         for result_index, item in enumerate(results, start=1):
             verse_id = item["id"]
 
@@ -237,6 +256,7 @@ def retrieve_candidates(question, generated_queries):
             candidate["matches"].append(
                 {
                     "query": query,
+                    "retrieval_type": retrieval_type,
                     "rank": result_index,
                     "distance": -item["score"],
                 }
@@ -282,6 +302,11 @@ def load_reranker():
 def rerank_globally(search_queries, candidates):
     tokenizer, model, device = load_reranker()
     original_query = search_queries[0]
+    intent_facets = search_queries[1 : 1 + NUM_FACET_QUERIES]
+    rerank_query = (
+        f"{original_query} "
+        f"Key intent facets: {'; '.join(intent_facets)}"
+    )
 
     candidate_texts = [
         (
@@ -293,7 +318,7 @@ def rerank_globally(search_queries, candidates):
     ]
 
     inputs = tokenizer(
-        [original_query] * len(candidate_texts),
+        [rerank_query] * len(candidate_texts),
         candidate_texts,
         padding=True,
         truncation=True,
