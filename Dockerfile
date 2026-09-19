@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY scripts /app/scripts
 COPY web /app/web
 COPY data/vector_cache /app/data/vector_cache
+COPY eval /app/eval
 
 EXPOSE 8000
 

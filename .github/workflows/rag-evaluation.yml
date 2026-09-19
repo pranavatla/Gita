@@ -2,18 +2,11 @@ name: RAG Evaluation
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/rag-evaluation.yml"
-      - "eval/rag_eval_cases.json"
-      - "scripts/evaluate_rag.py"
-      - "scripts/answer.py"
-      - "scripts/rerank.py"
-      - "scripts/local_vector_search.py"
-      - "scripts/bedrock_client.py"
-      - "data/vector_cache/**"
+  workflow_run:
+    workflows:
+      - Build and Push to ECR
+    types:
+      - completed
 
 permissions:
   id-token: write
@@ -25,14 +18,12 @@ env:
 
 jobs:
   evaluate-rag:
-    name: Run RAG regression
+    name: Run RAG regression in deployed container
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Configure AWS credentials from GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -48,65 +39,22 @@ jobs:
             --region "${{ env.AWS_REGION }}" \
             --name "${{ vars.EKS_CLUSTER_NAME }}"
 
-      - name: Load runtime Bedrock model configuration
-        env:
-          K8S_DEPLOYMENT: ${{ vars.K8S_DEPLOYMENT }}
-          K8S_CONTAINER: ${{ vars.K8S_CONTAINER }}
-          K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
-          BEDROCK_MODEL_ID_FROM_VAR: ${{ vars.BEDROCK_MODEL_ID }}
-          BEDROCK_EMBED_MODEL_ID_FROM_VAR: ${{ vars.BEDROCK_EMBED_MODEL_ID }}
+      - name: Wait for current deployment rollout
         run: |
-          set -euo pipefail
-
-          DEPLOYMENT_JSON="$(kubectl get deployment "$K8S_DEPLOYMENT" -n "$K8S_NAMESPACE" -o json)"
-
-          MODEL_ID="$(jq -r --arg container "$K8S_CONTAINER" '
-            .spec.template.spec.containers[]
-            | select(.name == $container)
-            | (.env // [])[]?
-            | select(.name == "BEDROCK_MODEL_ID")
-            | .value // empty
-          ' <<< "$DEPLOYMENT_JSON" | head -n 1)"
-
-          EMBED_MODEL_ID="$(jq -r --arg container "$K8S_CONTAINER" '
-            .spec.template.spec.containers[]
-            | select(.name == $container)
-            | (.env // [])[]?
-            | select(.name == "BEDROCK_EMBED_MODEL_ID")
-            | .value // empty
-          ' <<< "$DEPLOYMENT_JSON" | head -n 1)"
-
-          MODEL_ID="${MODEL_ID:-$BEDROCK_MODEL_ID_FROM_VAR}"
-          EMBED_MODEL_ID="${EMBED_MODEL_ID:-$BEDROCK_EMBED_MODEL_ID_FROM_VAR}"
-          EMBED_MODEL_ID="${EMBED_MODEL_ID:-amazon.titan-embed-text-v2:0}"
-
-          if [ -z "$MODEL_ID" ]; then
-            echo "BEDROCK_MODEL_ID was not found in the EKS deployment or GitHub repository variables."
-            echo "Set the repository variable BEDROCK_MODEL_ID to the Bedrock model/profile ID used by production."
-            exit 1
-          fi
-
-          echo "BEDROCK_MODEL_ID=$MODEL_ID" >> "$GITHUB_ENV"
-          echo "BEDROCK_EMBED_MODEL_ID=$EMBED_MODEL_ID" >> "$GITHUB_ENV"
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install --no-cache-dir -r requirements.txt
+          kubectl rollout status deployment/${{ vars.K8S_DEPLOYMENT }} \
+            -n "${{ vars.K8S_NAMESPACE }}" \
+            --timeout=10m
 
       - name: Smoke evaluation - first 5 cases
-        env:
-          PYTHONPATH: scripts
         run: |
-          python scripts/evaluate_rag.py --limit 5
+          kubectl exec deployment/${{ vars.K8S_DEPLOYMENT }} \
+            -n "${{ vars.K8S_NAMESPACE }}" \
+            -c "${{ vars.K8S_CONTAINER }}" \
+            -- sh -lc 'cd /app && PYTHONPATH=scripts python scripts/evaluate_rag.py --limit 5'
 
       - name: Full evaluation - 25 cases
-        env:
-          PYTHONPATH: scripts
         run: |
-          python scripts/evaluate_rag.py
+          kubectl exec deployment/${{ vars.K8S_DEPLOYMENT }} \
+            -n "${{ vars.K8S_NAMESPACE }}" \
+            -c "${{ vars.K8S_CONTAINER }}" \
+            -- sh -lc 'cd /app && PYTHONPATH=scripts python scripts/evaluate_rag.py'
