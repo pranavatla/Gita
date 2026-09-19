@@ -209,6 +209,33 @@ def validate_message(result):
     if not direct_answer or not explanation:
         return False
 
+    combined = f"{direct_answer} {explanation}".strip()
+    lowered = combined.lower()
+    forbidden_starts = (
+        "the bhagavad gita",
+        "bhagavad gita",
+        "the gita",
+        "verse",
+        "bg",
+    )
+
+    if lowered.startswith(forbidden_starts):
+        return False
+
+    if "bg" in lowered or "verse " in lowered:
+        return False
+
+    sentence_count = sum(
+        combined.count(marker)
+        for marker in (".", "?", "!")
+    )
+
+    if sentence_count > 3:
+        return False
+
+    if len(combined.split()) > 90:
+        return False
+
     result["direct_answer"] = direct_answer
     result["explanation"] = explanation
 
@@ -227,18 +254,19 @@ def generate_passage_message(question, used_verse_ids, selected):
     context = build_context(chosen_passages)
 
     system_prompt = (
-        "Write a concise, natural grounded answer for the user's actual "
-        "question. Use only the supplied Bhagavad Gita translation as the "
-        "source. direct_answer should be one or two sentences and must start "
-        "with the answer, not boilerplate like 'The Bhagavad Gita states'. "
-        "explanation should be one to three sentences connecting the answer "
-        "to the selected verse. Clearly separate what the verse explicitly "
-        "says from what is a reasonable inference. When the user asks for "
-        "certainty, guarantee, proof, punishment, karma, or rebirth, avoid "
-        "overclaiming: say what the passage gives within the Gita's worldview, "
-        "not that it proves a legal or mechanical guarantee unless the passage "
-        "explicitly says so. If the selected passage is insufficient, say so "
-        "plainly. Do not add generic advice unless the user asks for advice. "
+        "Write a short, human answer grounded only in the supplied Bhagavad "
+        "Gita translation. The full answer formed by direct_answer plus "
+        "explanation must be no more than three sentences and no more than "
+        "90 words. direct_answer must start with the answer itself, never "
+        "with boilerplate such as 'The Bhagavad Gita', 'The Gita', 'Verse', "
+        "or a verse ID. Do not mention the verse ID inside the answer because "
+        "the UI already shows it. explanation must connect the answer to the "
+        "selected translation and separate explicit meaning from reasonable "
+        "inference. For certainty, guarantee, proof, punishment, karma, or "
+        "rebirth questions, state what the passage supports within the Gita's "
+        "worldview; do not claim a mechanical or courtroom-style guarantee "
+        "unless the supplied passage explicitly says that. If the passage is "
+        "insufficient, say so plainly. Do not add generic advice unless asked. "
         "Do not invent facts, promises, punishments, quotations, or verse IDs."
     )
 
@@ -292,8 +320,10 @@ def generate_passage_message(question, used_verse_ids, selected):
                         {
                             "text": (
                                 "The previous response was invalid. Return "
-                                "a non-empty direct_answer and explanation "
-                                "grounded only in the supplied translations."
+                                "a concise direct_answer and explanation: "
+                                "three sentences maximum, no verse IDs, no "
+                                "boilerplate opening, grounded only in the "
+                                "supplied translation."
                             )
                         }
                     ],

@@ -110,7 +110,7 @@ textarea::placeholder { color: rgba(255,255,255,.64); }
 .result-grid, .skeleton-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .message-panel, .passage-panel, .timing-panel, .skeleton-panel { padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: rgba(12,12,12,.5); backdrop-filter: blur(24px); }
 .panel-label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
-.message-text { font-size: 22px; line-height: 1.65; white-space: pre-line; }
+.message-text { font-size: 20px; line-height: 1.55; white-space: pre-line; }
 .passage-block + .passage-block { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line); }
 .passage-block h3 { font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 10px; }
 .sanskrit { font-family: 'Noto Serif Devanagari', serif; line-height: 2; font-size: 21px; }
@@ -213,6 +213,9 @@ code { font-size: 10px; color: rgba(255,255,255,.7); overflow-wrap: anywhere; }
   .capabilities { margin-top: 26px; }
   .response-shell { padding: 0 20px; }
   .result-grid, .skeleton-grid, .pipeline-grid { grid-template-columns: 1fr; }
+  .message-panel, .passage-panel, .timing-panel, .skeleton-panel { padding: 22px; }
+  .message-text { font-size: 18px; line-height: 1.5; }
+  .result-heading h2 { font-size: 30px; }
   .timing-grid { grid-template-columns: 1fr 1fr; }
   .result-heading { align-items: flex-start; flex-direction: column; }
   .figures { flex-direction: column; }

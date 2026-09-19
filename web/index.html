@@ -202,7 +202,7 @@
 
         <div class="result-grid">
           <article class="message-panel">
-            <p class="panel-label">Grounded answer</p>
+            <p class="panel-label">Reflection</p>
             <p class="message-text" id="messageText"></p>
           </article>
 
@@ -403,8 +403,8 @@
             <h3>Grounded generation</h3>
             <p>
               A final Bedrock call receives only the question and selected translation,
-              then writes a careful answer that separates direct verse meaning from
-              reasonable inference.
+              then writes a short answer with validation against boilerplate,
+              verse-ID repetition, and overlong responses.
             </p>
             <div class="function-list">
               <code>build_context()</code>
