@@ -21,8 +21,19 @@ RERANK_SCHEMA = {
             "minItems": RERANK_LIMIT,
             "maxItems": RERANK_LIMIT,
         },
+        "evidence_strength": {
+            "type": "string",
+            "enum": ["strong", "partial", "none"],
+        },
+        "evidence_reason": {
+            "type": "string",
+        },
     },
-    "required": ["ranked_verse_ids"],
+    "required": [
+        "ranked_verse_ids",
+        "evidence_strength",
+        "evidence_reason",
+    ],
 }
 
 MESSAGE_SCHEMA = {
@@ -68,8 +79,21 @@ def build_context(selected):
 
 def validate_ranking(result, allowed_ids):
     ranked_ids = result.get("ranked_verse_ids")
+    evidence_strength = result.get("evidence_strength")
+    evidence_reason = result.get("evidence_reason")
 
     if not isinstance(ranked_ids, list):
+        return False
+
+    if evidence_strength not in {"strong", "partial", "none"}:
+        return False
+
+    if not isinstance(evidence_reason, str):
+        return False
+
+    evidence_reason = evidence_reason.strip()
+
+    if not evidence_reason:
         return False
 
     cleaned_ids = [
@@ -88,6 +112,7 @@ def validate_ranking(result, allowed_ids):
         return False
 
     result["ranked_verse_ids"] = cleaned_ids
+    result["evidence_reason"] = evidence_reason
     return True
 
 
@@ -104,9 +129,14 @@ def rerank_and_select(question, candidates):
         "to consequences, future birth, degradation, or divine action should "
         "outrank a passage that only mentions karma, action, death, duty, or "
         "rebirth separately. Penalize passages that discuss a nearby topic "
-        "without answering the question. Do not answer the user and do not "
-        "invent verses. Return six unique exact IDs, strongest first. The "
-        "first ID is the passage selected to ground the final answer."
+        "without answering the question. Also judge evidence_strength for "
+        "the best passage: strong means the top passage can ground a direct "
+        "answer, including a nuanced or caveated answer; partial means it is "
+        "related but cannot support a grounded answer to the exact question; "
+        "none means no supplied passage should be used as evidence. Do not "
+        "answer the user and do not invent verses. Return six unique exact "
+        "IDs, strongest first. The first ID is the passage selected to ground "
+        "the final answer when evidence_strength is strong."
     )
 
     messages = [
@@ -149,6 +179,8 @@ def rerank_and_select(question, candidates):
                 {
                     "candidate": candidates_by_id[verse_id],
                     "rank": rank,
+                    "evidence_strength": result["evidence_strength"],
+                    "evidence_reason": result["evidence_reason"],
                 }
                 for rank, verse_id in enumerate(ranked_ids, start=1)
             ]
@@ -159,6 +191,9 @@ def rerank_and_select(question, candidates):
                         {
                             "id": item["candidate"]["id"],
                             "rank": item["rank"],
+                            "evidence_strength": item[
+                                "evidence_strength"
+                            ],
                         }
                         for item in selected
                     ]
@@ -182,7 +217,8 @@ def rerank_and_select(question, candidates):
                         {
                             "text": (
                                 "Return exactly six unique exact IDs from "
-                                "the supplied passages, strongest first."
+                                "the supplied passages, strongest first, "
+                                "plus evidence_strength and evidence_reason."
                             )
                         }
                     ],
@@ -350,6 +386,22 @@ def format_passage_message(passage_message):
     )
 
 
+def build_weak_evidence_message(evidence_strength, evidence_reason):
+    if evidence_strength == "partial":
+        return (
+            "I found a related passage, but not enough support to give a "
+            "fully grounded answer to this exact question. The closest verse "
+            "is shown below for context, but the answer should be treated as "
+            f"partial evidence: {evidence_reason}"
+        )
+
+    return (
+        "I could not find a strong enough supporting passage in the retrieved "
+        "evidence to answer this directly. The closest verse is shown below "
+        f"only for context: {evidence_reason}"
+    )
+
+
 def print_answer(answer, selected):
     candidates_by_id = {
         result["candidate"]["id"]: result["candidate"]
@@ -410,13 +462,22 @@ def answer_question(question):
     )
 
     used_verse_ids = [selected[0]["candidate"]["id"]]
+    evidence_strength = selected[0]["evidence_strength"]
+    evidence_reason = selected[0]["evidence_reason"]
 
     step_started_at = time.perf_counter()
-    passage_message = generate_passage_message(
-        question,
-        used_verse_ids,
-        selected,
-    )
+    if evidence_strength == "strong":
+        passage_message = generate_passage_message(
+            question,
+            used_verse_ids,
+            selected,
+        )
+        message = format_passage_message(passage_message)
+    else:
+        message = build_weak_evidence_message(
+            evidence_strength,
+            evidence_reason,
+        )
     elapsed = time.perf_counter() - step_started_at
     timings["final_answer_generation"] = elapsed
     print(f"final answer generation: {elapsed:.2f}s")
@@ -425,9 +486,9 @@ def answer_question(question):
     timings["total_pipeline"] = total_seconds
 
     answer = {
-        "message": (
-            format_passage_message(passage_message)
-        ),
+        "message": message,
+        "evidence_strength": evidence_strength,
+        "evidence_reason": evidence_reason,
         "used_verse_ids": used_verse_ids,
         "timings": timings,
         "total_seconds": total_seconds,
@@ -455,6 +516,8 @@ def answer_question(question):
                 for result in selected
             ],
             "selected_verse_ids": used_verse_ids,
+            "evidence_strength": evidence_strength,
+            "evidence_reason": evidence_reason,
         },
     }
 

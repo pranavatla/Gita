@@ -1,0 +1,243 @@
+[
+  {
+    "id": "karma_wrongdoers_rebirth",
+    "question": "If karma and rebirth are real, how do we know people who do wrong eventually face consequences?",
+    "acceptable_verse_ids": [
+      "BG16.19",
+      "BG16.20"
+    ],
+    "intent": "wrongdoing, karmic consequence, rebirth"
+  },
+  {
+    "id": "work_without_result_anxiety",
+    "question": "I keep worrying about the result of my work and cannot focus on doing the work itself.",
+    "acceptable_verse_ids": [
+      "BG2.47",
+      "BG2.48"
+    ],
+    "intent": "duty without attachment to results"
+  },
+  {
+    "id": "wandering_mind_meditation",
+    "question": "Whenever I sit to meditate my mind keeps running everywhere. How do I deal with that?",
+    "acceptable_verse_ids": [
+      "BG6.34",
+      "BG6.35",
+      "BG6.26"
+    ],
+    "intent": "restless mind and practice"
+  },
+  {
+    "id": "anger_clouding_judgment",
+    "question": "My anger takes over and then I make bad decisions. What does the Gita say about that?",
+    "acceptable_verse_ids": [
+      "BG2.62",
+      "BG2.63"
+    ],
+    "intent": "anger, delusion, loss of judgment"
+  },
+  {
+    "id": "fear_of_death",
+    "question": "I am scared of death and losing people. Is there a verse that gives perspective?",
+    "acceptable_verse_ids": [
+      "BG2.20",
+      "BG2.27",
+      "BG2.13"
+    ],
+    "intent": "death, soul, continuity"
+  },
+  {
+    "id": "doing_own_duty_badly",
+    "question": "I feel tempted to copy someone else's path because my own duty feels difficult.",
+    "acceptable_verse_ids": [
+      "BG3.35",
+      "BG18.47"
+    ],
+    "intent": "own duty versus another's duty"
+  },
+  {
+    "id": "balanced_success_failure",
+    "question": "How do I stay steady whether I succeed or fail?",
+    "acceptable_verse_ids": [
+      "BG2.48",
+      "BG2.38"
+    ],
+    "intent": "equanimity in success and failure"
+  },
+  {
+    "id": "simple_devotion",
+    "question": "I do not have anything grand to offer spiritually. Does a simple offering matter?",
+    "acceptable_verse_ids": [
+      "BG9.26"
+    ],
+    "intent": "simple devotion and offering"
+  },
+  {
+    "id": "divine_intervention_when_dharma_falls",
+    "question": "When evil increases and dharma declines, does Krishna say he intervenes?",
+    "acceptable_verse_ids": [
+      "BG4.7",
+      "BG4.8"
+    ],
+    "intent": "decline of dharma and divine appearance"
+  },
+  {
+    "id": "discipline_food_sleep",
+    "question": "My sleep and food habits are all over the place and it affects my mind. Any Gita perspective?",
+    "acceptable_verse_ids": [
+      "BG6.16",
+      "BG6.17"
+    ],
+    "intent": "moderation in eating sleeping recreation"
+  },
+  {
+    "id": "seeing_everyone_equally",
+    "question": "How can I see people beyond status, education, caste, or background?",
+    "acceptable_verse_ids": [
+      "BG5.18",
+      "BG6.29",
+      "BG6.32"
+    ],
+    "intent": "equal vision"
+  },
+  {
+    "id": "senses_pull_me_away",
+    "question": "Even when I know what is right, my senses pull me toward distractions.",
+    "acceptable_verse_ids": [
+      "BG2.58",
+      "BG2.60",
+      "BG2.61"
+    ],
+    "intent": "sense control"
+  },
+  {
+    "id": "desire_becomes_anger",
+    "question": "Why does wanting something so badly turn into anger and frustration?",
+    "acceptable_verse_ids": [
+      "BG2.62",
+      "BG2.63"
+    ],
+    "intent": "desire leading to anger"
+  },
+  {
+    "id": "qualities_of_demoniac_nature",
+    "question": "What kind of qualities does the Gita call destructive or demoniac?",
+    "acceptable_verse_ids": [
+      "BG16.4",
+      "BG16.7",
+      "BG16.9"
+    ],
+    "intent": "demoniac qualities"
+  },
+  {
+    "id": "three_gunas_confusion",
+    "question": "Why do I feel pulled between clarity, restlessness, and laziness?",
+    "acceptable_verse_ids": [
+      "BG14.5",
+      "BG14.6",
+      "BG14.7",
+      "BG14.8"
+    ],
+    "intent": "three gunas"
+  },
+  {
+    "id": "peace_from_no_attachment",
+    "question": "How does someone find peace when desires keep disturbing the mind?",
+    "acceptable_verse_ids": [
+      "BG2.70",
+      "BG2.71"
+    ],
+    "intent": "peace and desire"
+  },
+  {
+    "id": "action_is_better_than_inaction",
+    "question": "I feel like avoiding everything. Is doing my duty still better than doing nothing?",
+    "acceptable_verse_ids": [
+      "BG3.8",
+      "BG3.4",
+      "BG3.5"
+    ],
+    "intent": "action versus inaction"
+  },
+  {
+    "id": "divine_presence_in_heart",
+    "question": "Does the Gita say God is present in everyone's heart?",
+    "acceptable_verse_ids": [
+      "BG15.15",
+      "BG18.61",
+      "BG10.20"
+    ],
+    "intent": "divine presence in heart"
+  },
+  {
+    "id": "surrender_and_guidance",
+    "question": "When I am confused and cannot decide, does the Gita say to surrender and seek guidance?",
+    "acceptable_verse_ids": [
+      "BG18.66",
+      "BG18.62",
+      "BG2.7"
+    ],
+    "intent": "surrender and guidance"
+  },
+  {
+    "id": "remembering_at_death",
+    "question": "Does what we remember at the time of death affect where we go?",
+    "acceptable_verse_ids": [
+      "BG8.5",
+      "BG8.6"
+    ],
+    "intent": "consciousness at death"
+  },
+  {
+    "id": "devotee_not_lost",
+    "question": "If someone sincerely tries spiritually but fails, is all their effort wasted?",
+    "acceptable_verse_ids": [
+      "BG6.40",
+      "BG6.41",
+      "BG6.43"
+    ],
+    "intent": "spiritual effort never wasted"
+  },
+  {
+    "id": "work_as_offering",
+    "question": "How can I turn ordinary work into something spiritual?",
+    "acceptable_verse_ids": [
+      "BG9.27",
+      "BG3.30",
+      "BG5.10"
+    ],
+    "intent": "offering work"
+  },
+  {
+    "id": "wisdom_cuts_doubt",
+    "question": "I am stuck in doubt and overthinking. Is there a verse about cutting through doubt with knowledge?",
+    "acceptable_verse_ids": [
+      "BG4.42",
+      "BG4.39",
+      "BG4.40"
+    ],
+    "intent": "doubt and knowledge"
+  },
+  {
+    "id": "foods_and_mind",
+    "question": "Does the Gita connect food habits with the state of the mind?",
+    "acceptable_verse_ids": [
+      "BG17.8",
+      "BG17.9",
+      "BG17.10"
+    ],
+    "intent": "food and qualities"
+  },
+  {
+    "id": "humility_and_knowledge",
+    "question": "What qualities does the Gita associate with real knowledge?",
+    "acceptable_verse_ids": [
+      "BG13.8",
+      "BG13.9",
+      "BG13.10",
+      "BG13.11",
+      "BG13.12"
+    ],
+    "intent": "qualities of knowledge"
+  }
+]

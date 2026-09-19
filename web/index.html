@@ -402,9 +402,9 @@
           <article class="pipeline-card" data-reveal>
             <h3>Grounded generation</h3>
             <p>
-              A final Bedrock call receives only the question and selected translation,
-              then writes a short answer with validation against boilerplate,
-              verse-ID repetition, and overlong responses.
+              A final Bedrock call receives only the question and selected translation.
+              If the selected evidence is weak, the app shows the closest verse
+              as context instead of forcing a confident answer.
             </p>
             <div class="function-list">
               <code>build_context()</code>
@@ -415,15 +415,28 @@
           </article>
 
           <article class="pipeline-card" data-reveal>
+            <h3>Evaluation harness</h3>
+            <p>
+              A 25-question regression set checks whether natural questions land on
+              acceptable verses, so improvements can be tested instead of guessed.
+            </p>
+            <div class="function-list">
+              <code>eval/rag_eval_cases.json</code>
+              <code>evaluate_rag.py</code>
+              <code>selected verse accuracy</code>
+            </div>
+          </article>
+
+          <article class="pipeline-card" data-reveal>
             <h3>Orchestration and API</h3>
             <p>
               The final orchestration composes the grounded answer and exposes it
               through a validated FastAPI endpoint for the web experience and API consumers.
             </p>
             <div class="function-list">
-              <code>generate_grounded_answer()</code>
               <code>answer_question()</code>
               <code>create_answer()</code>
+              <code>trace evidence strength</code>
             </div>
           </article>
         </div>
@@ -541,7 +554,8 @@
           )
           .join("\n");
         resultFields.traceSelected.textContent =
-          data.trace.selected_verse_ids.join(", ");
+          data.trace.selected_verse_ids.join(", ") +
+          `\nEvidence: ${data.trace.evidence_strength}\n${data.trace.evidence_reason}`;
         resultSection.dataset.visible = "true";
         resultSection.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
       }

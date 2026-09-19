@@ -64,6 +64,8 @@ class RetrievalTraceResponse(BaseModel):
     fused_candidates: list[FusedCandidateTrace]
     reranked_candidates: list[RerankedCandidateTrace]
     selected_verse_ids: list[str]
+    evidence_strength: str
+    evidence_reason: str
 
 
 class AnswerResponse(BaseModel):
