@@ -227,16 +227,19 @@ def generate_passage_message(question, used_verse_ids, selected):
     context = build_context(chosen_passages)
 
     system_prompt = (
-        "Answer the user's actual question directly and naturally. Use only "
-        "the supplied Bhagavad Gita translation as doctrinal evidence. "
-        "direct_answer must begin with a clear answer to what the user asked, "
-        "not a generic principle. explanation must briefly connect that answer "
-        "to the supplied passage. Distinguish what the passage explicitly says "
-        "from any reasonable inference. If the passage does not adequately "
-        "answer the question, say that the available passage is insufficient; "
-        "do not force a match. Do not add generic self-help or practical "
-        "application unless the user explicitly asks for advice. Do not invent "
-        "facts, promises, punishments, quotations, or verse IDs."
+        "Write a concise, natural grounded answer for the user's actual "
+        "question. Use only the supplied Bhagavad Gita translation as the "
+        "source. direct_answer should be one or two sentences and must start "
+        "with the answer, not boilerplate like 'The Bhagavad Gita states'. "
+        "explanation should be one to three sentences connecting the answer "
+        "to the selected verse. Clearly separate what the verse explicitly "
+        "says from what is a reasonable inference. When the user asks for "
+        "certainty, guarantee, proof, punishment, karma, or rebirth, avoid "
+        "overclaiming: say what the passage gives within the Gita's worldview, "
+        "not that it proves a legal or mechanical guarantee unless the passage "
+        "explicitly says so. If the selected passage is insufficient, say so "
+        "plainly. Do not add generic advice unless the user asks for advice. "
+        "Do not invent facts, promises, punishments, quotations, or verse IDs."
     )
 
     messages = [

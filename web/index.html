@@ -402,13 +402,14 @@
           <article class="pipeline-card" data-reveal>
             <h3>Grounded generation</h3>
             <p>
-              A second Bedrock call receives the question and selected translation, separating
-              retrieval from response writing to reduce unsupported invention.
+              A final Bedrock call receives only the question and selected translation,
+              then writes a careful answer that separates direct verse meaning from
+              reasonable inference.
             </p>
             <div class="function-list">
               <code>build_context()</code>
               <code>generate_passage_message()</code>
-              <code>validate_message()</code>
+              <code>faithfulness guardrails</code>
               <code>Claude Sonnet 4.6</code>
             </div>
           </article>
