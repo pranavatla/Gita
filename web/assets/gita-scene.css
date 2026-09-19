@@ -15,12 +15,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 100px; scrollbar-color: rgba
 body { margin: 0; background: #faf6ee; color: var(--ink); line-height: 1.55; font-size: 17px; }
 ::selection { background: rgba(29, 26, 22, .14); }
 a { color: inherit; text-decoration: none; }
-a:hover { color: #000; }
 button, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }
 button, .pill, .nav-cta, nav a { transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, opacity 180ms ease, transform 160ms var(--ease-out); }
-button:active, .pill:active { transform: scale(.97); }
+button:active, .pill:active, .nav-cta:active { transform: scale(.97); }
 .icon { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .pill .icon, .nav-cta .icon, .button-arrow { transition: transform 200ms var(--ease-out); }
 :focus-visible { outline: 2px solid #1d1a16; outline-offset: 5px; }
@@ -64,7 +63,6 @@ h1 { margin-top: 22px; }
 .micro-label { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
 .pill { display: inline-flex; align-items: center; gap: 22px; border-radius: 40px; padding: 12px 20px; font-size: 16px; font-weight: 500; }
 .primary { background: #1d1a16; color: #fdfbf7; }
-.primary:hover, .skip-link:hover { color: #fdfbf7; }
 .invitation .pill { margin-top: 14px; }
 .scene-spacer { height: 80vh; }
 
@@ -100,9 +98,12 @@ textarea::placeholder { color: rgba(29,26,22,.62); }
 .spinner { display: none; width: 14px; height: 14px; border: 2px solid rgba(253,251,247,.45); border-top-color: #fdfbf7; border-radius: 50%; animation: spin .6s linear infinite; }
 [data-loading="true"] .spinner { display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.feedback { font-size: 17px; color: #8c2f1d; margin-top: 16px; animation: feedback-in 200ms var(--ease-out); }
-@keyframes feedback-in { from { opacity: 0; transform: translateY(-4px); } }
-.feedback:empty { display: none; }
+.feedback { font-size: 17px; color: #8c2f1d; margin-top: 16px; opacity: 1; transform: translateY(0); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.feedback:empty { display: none; transition-duration: 140ms; }
+@supports (transition-behavior: allow-discrete) {
+  .feedback { transition-property: opacity, transform, display; transition-behavior: allow-discrete; }
+}
+@starting-style { .feedback { opacity: 0; transform: translateY(-4px); } }
 
 .response-shell { padding: 0 48px; }
 .result-section, .skeleton-section { display: none; opacity: 0; transform: translateY(12px); transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out); scroll-margin-top: 120px; margin: 32px auto 80px; max-width: 1200px; }
@@ -183,7 +184,8 @@ code { font-size: 15px; color: rgba(29,26,22,.7); overflow-wrap: anywhere; }
 .skip-link:focus { transform: none; }
 
 @media (hover: hover) and (pointer: fine) {
-  nav a:hover { color: #000; }
+  a:hover { color: #000; }
+  .primary:hover, .skip-link:hover { color: #fdfbf7; }
   .nav-cta:hover { background: #fff; border-color: rgba(29,26,22,.36); }
   .primary:hover { background: #38322a; }
   .example-button:hover { background: rgba(29,26,22,.1); }
@@ -192,7 +194,7 @@ code { font-size: 15px; color: rgba(29,26,22,.7); overflow-wrap: anywhere; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .has-reveal [data-reveal] { opacity: 0; transform: translateY(14px); }
-  .has-reveal [data-reveal].is-revealed { opacity: 1; transform: none; transition: opacity 520ms var(--ease-out), transform 520ms var(--ease-out); transition-delay: var(--reveal-delay, 0ms); }
+  .has-reveal [data-reveal].is-revealed { opacity: 1; transform: none; transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out); transition-delay: var(--reveal-delay, 0ms); }
 }
 @media (min-width: 1600px) { .cinema-section, .response-shell { padding-left: max(48px,calc((100vw - 1504px)/2)); padding-right: max(48px,calc((100vw - 1504px)/2)); } }
 @media (max-width: 1000px) {
@@ -249,6 +251,7 @@ code { font-size: 15px; color: rgba(29,26,22,.7); overflow-wrap: anywhere; }
     transition-delay: 0ms !important;
     animation: none !important;
   }
+  button:active, .pill:active, .nav-cta:active { transform: none !important; }
   .spinner { animation: spin .6s linear infinite !important; }
   .skeleton-line { animation: skeleton-pulse 1.4s ease-in-out infinite !important; }
 }
