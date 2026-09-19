@@ -5,3 +5,4 @@ __pycache__/
 data/chroma/
 scripts/__pycache__/
 EOF
+web/preview.html
