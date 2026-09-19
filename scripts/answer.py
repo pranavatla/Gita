@@ -77,7 +77,99 @@ def build_context(selected):
     )
 
 
-def validate_ranking(result, allowed_ids):
+def normalize_verse_id(value):
+    if isinstance(value, dict):
+        value = (
+            value.get("id")
+            or value.get("verse_id")
+            or value.get("verse")
+            or value.get("reference")
+        )
+
+    if not isinstance(value, str):
+        return ""
+
+    normalized = value.strip().upper().replace(" ", "")
+    normalized = normalized.replace("BG.", "BG")
+
+    match = re.search(
+        r"^(?:BG)?(\\d{1,2})[.:-](\\d{1,2})$",
+        normalized,
+    )
+
+    if match:
+        chapter, verse = match.groups()
+        return f"BG{int(chapter)}.{int(verse)}"
+
+    return normalized
+
+
+def coerce_ranking_result(result, candidate_order):
+    if isinstance(result, list):
+        result = {"ranked_verse_ids": result}
+
+    if not isinstance(result, dict):
+        return {}
+
+    ranked_ids = (
+        result.get("ranked_verse_ids")
+        or result.get("ranked_ids")
+        or result.get("ranked_verses")
+        or result.get("verse_ids")
+        or result.get("selected_verse_ids")
+        or result.get("ranking")
+    )
+
+    if isinstance(ranked_ids, dict):
+        ranked_ids = list(ranked_ids.values())
+
+    evidence_strength = (
+        result.get("evidence_strength")
+        or result.get("strength")
+        or result.get("support")
+        or "strong"
+    )
+
+    if isinstance(evidence_strength, str):
+        evidence_strength = evidence_strength.strip().lower()
+
+    evidence_reason = (
+        result.get("evidence_reason")
+        or result.get("reason")
+        or result.get("rationale")
+        or result.get("explanation")
+        or "Selected by the evidence reranker."
+    )
+
+    allowed_ids = set(candidate_order)
+    cleaned_ids = []
+
+    if isinstance(ranked_ids, list):
+        for verse_id in ranked_ids:
+            cleaned_id = normalize_verse_id(verse_id)
+
+            if (
+                cleaned_id in allowed_ids
+                and cleaned_id not in cleaned_ids
+            ):
+                cleaned_ids.append(cleaned_id)
+
+    for verse_id in candidate_order:
+        if len(cleaned_ids) >= RERANK_LIMIT:
+            break
+
+        if verse_id not in cleaned_ids:
+            cleaned_ids.append(verse_id)
+
+    return {
+        "ranked_verse_ids": cleaned_ids,
+        "evidence_strength": evidence_strength,
+        "evidence_reason": evidence_reason,
+    }
+
+
+def validate_ranking(result, candidate_order):
+    result = coerce_ranking_result(result, candidate_order)
     ranked_ids = result.get("ranked_verse_ids")
     evidence_strength = result.get("evidence_strength")
     evidence_reason = result.get("evidence_reason")
@@ -97,9 +189,9 @@ def validate_ranking(result, allowed_ids):
         return False
 
     cleaned_ids = [
-        verse_id.strip()
+        verse_id
         for verse_id in ranked_ids
-        if isinstance(verse_id, str) and verse_id.strip()
+        if isinstance(verse_id, str) and verse_id
     ]
 
     if len(cleaned_ids) != RERANK_LIMIT:
@@ -108,17 +200,17 @@ def validate_ranking(result, allowed_ids):
     if len(set(cleaned_ids)) != RERANK_LIMIT:
         return False
 
-    if any(verse_id not in allowed_ids for verse_id in cleaned_ids):
+    if any(verse_id not in candidate_order for verse_id in cleaned_ids):
         return False
 
     result["ranked_verse_ids"] = cleaned_ids
     result["evidence_reason"] = evidence_reason
-    return True
+    return result
 
 
 def rerank_and_select(question, candidates):
     context = build_candidate_context(candidates)
-    allowed_ids = {candidate["id"] for candidate in candidates}
+    candidate_order = [candidate["id"] for candidate in candidates]
 
     system_prompt = (
         "You are the evidence reranker in a Bhagavad Gita RAG pipeline. "
@@ -157,10 +249,14 @@ def rerank_and_select(question, candidates):
         raw_content = converse_text(
             messages=messages,
             system_prompt=(
-                f"{system_prompt} Return only valid JSON matching this "
-                f"schema: {json.dumps(RERANK_SCHEMA)}"
+                f"{system_prompt} Return only valid JSON. Do not include "
+                f"markdown or commentary. Example format: "
+                f'{{"ranked_verse_ids":["BG16.19","BG16.20",'
+                f'"BG14.15","BG16.9","BG9.21","BG1.40"],'
+                f'"evidence_strength":"strong","evidence_reason":'
+                f'"Short reason."}} Schema: {json.dumps(RERANK_SCHEMA)}'
             ),
-            max_tokens=250,
+            max_tokens=350,
             temperature=0,
         )
 
@@ -169,7 +265,10 @@ def rerank_and_select(question, candidates):
         except json.JSONDecodeError:
             result = {}
 
-        if validate_ranking(result, allowed_ids):
+        validated = validate_ranking(result, candidate_order)
+
+        if validated:
+            result = validated
             ranked_ids = result["ranked_verse_ids"]
             candidates_by_id = {
                 candidate["id"]: candidate
@@ -185,7 +284,7 @@ def rerank_and_select(question, candidates):
                 for rank, verse_id in enumerate(ranked_ids, start=1)
             ]
             print(
-                "Claude evidence reranking trace:",
+                "Model evidence reranking trace:",
                 json.dumps(
                     [
                         {
@@ -202,7 +301,7 @@ def rerank_and_select(question, candidates):
             return selected
 
         print(
-            f"Invalid Claude evidence ranking, retrying "
+            f"Invalid Model evidence ranking, retrying "
             f"({attempt}/3)"
         )
         messages.extend(
@@ -457,7 +556,7 @@ def answer_question(question):
     timings["reranking"] = elapsed
     timings["verse_selection"] = 0.0
     print(
-        f"Claude evidence reranking and selection: "
+        f"Model evidence reranking and selection: "
         f"{elapsed:.2f}s"
     )
 
