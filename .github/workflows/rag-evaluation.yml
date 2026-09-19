@@ -39,6 +39,56 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Build kubeconfig for cluster
+        run: |
+          aws eks update-kubeconfig \
+            --region "${{ env.AWS_REGION }}" \
+            --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      - name: Load runtime Bedrock model configuration
+        env:
+          K8S_DEPLOYMENT: ${{ vars.K8S_DEPLOYMENT }}
+          K8S_CONTAINER: ${{ vars.K8S_CONTAINER }}
+          K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+          BEDROCK_MODEL_ID_FROM_VAR: ${{ vars.BEDROCK_MODEL_ID }}
+          BEDROCK_EMBED_MODEL_ID_FROM_VAR: ${{ vars.BEDROCK_EMBED_MODEL_ID }}
+        run: |
+          set -euo pipefail
+
+          DEPLOYMENT_JSON="$(kubectl get deployment "$K8S_DEPLOYMENT" -n "$K8S_NAMESPACE" -o json)"
+
+          MODEL_ID="$(jq -r --arg container "$K8S_CONTAINER" '
+            .spec.template.spec.containers[]
+            | select(.name == $container)
+            | (.env // [])[]?
+            | select(.name == "BEDROCK_MODEL_ID")
+            | .value // empty
+          ' <<< "$DEPLOYMENT_JSON" | head -n 1)"
+
+          EMBED_MODEL_ID="$(jq -r --arg container "$K8S_CONTAINER" '
+            .spec.template.spec.containers[]
+            | select(.name == $container)
+            | (.env // [])[]?
+            | select(.name == "BEDROCK_EMBED_MODEL_ID")
+            | .value // empty
+          ' <<< "$DEPLOYMENT_JSON" | head -n 1)"
+
+          MODEL_ID="${MODEL_ID:-$BEDROCK_MODEL_ID_FROM_VAR}"
+          EMBED_MODEL_ID="${EMBED_MODEL_ID:-$BEDROCK_EMBED_MODEL_ID_FROM_VAR}"
+          EMBED_MODEL_ID="${EMBED_MODEL_ID:-amazon.titan-embed-text-v2:0}"
+
+          if [ -z "$MODEL_ID" ]; then
+            echo "BEDROCK_MODEL_ID was not found in the EKS deployment or GitHub repository variables."
+            echo "Set the repository variable BEDROCK_MODEL_ID to the Bedrock model/profile ID used by production."
+            exit 1
+          fi
+
+          echo "BEDROCK_MODEL_ID=$MODEL_ID" >> "$GITHUB_ENV"
+          echo "BEDROCK_EMBED_MODEL_ID=$EMBED_MODEL_ID" >> "$GITHUB_ENV"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
