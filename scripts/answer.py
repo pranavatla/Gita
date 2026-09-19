@@ -31,16 +31,16 @@ SELECTION_SCHEMA = {
 MESSAGE_SCHEMA = {
     "type": "object",
     "properties": {
-        "principle": {
+        "direct_answer": {
             "type": "string",
         },
-        "application": {
+        "explanation": {
             "type": "string",
         },
     },
     "required": [
-        "principle",
-        "application",
+        "direct_answer",
+        "explanation",
     ],
 }
 
@@ -91,23 +91,23 @@ def validate_selection(result, allowed_ids):
 
 
 def validate_message(result):
-    principle = result.get("principle")
-    application = result.get("application")
+    direct_answer = result.get("direct_answer")
+    explanation = result.get("explanation")
 
-    if not isinstance(principle, str):
+    if not isinstance(direct_answer, str):
         return False
 
-    if not isinstance(application, str):
+    if not isinstance(explanation, str):
         return False
 
-    principle = principle.strip()
-    application = application.strip()
+    direct_answer = direct_answer.strip()
+    explanation = explanation.strip()
 
-    if not principle or not application:
+    if not direct_answer or not explanation:
         return False
 
-    result["principle"] = principle
-    result["application"] = application
+    result["direct_answer"] = direct_answer
+    result["explanation"] = explanation
 
     return True
 
@@ -190,7 +190,7 @@ def select_verse_ids(question, selected):
     )
 
 
-def generate_passage_message(used_verse_ids, selected):
+def generate_passage_message(question, used_verse_ids, selected):
     selected_by_id = {
         result["candidate"]["id"]: result
         for result in selected
@@ -202,13 +202,16 @@ def generate_passage_message(used_verse_ids, selected):
     context = build_context(chosen_passages)
 
     system_prompt = (
-        "Using only the supplied English translations, state their central "
-        "principle and a general practical application. You are not given "
-        "the user's situation, so do not infer or mention any specific "
-        "event, person, conduct, motive, consent, wrongdoing, diagnosis, "
-        "or legal or moral judgment. Do not invent facts, promises, "
-        "punishments, quotations, or verse IDs. Keep principle and "
-        "application concise and directly supported by the translations."
+        "Answer the user's actual question directly and naturally. Use only "
+        "the supplied Bhagavad Gita translation as doctrinal evidence. "
+        "direct_answer must begin with a clear answer to what the user asked, "
+        "not a generic principle. explanation must briefly connect that answer "
+        "to the supplied passage. Distinguish what the passage explicitly says "
+        "from any reasonable inference. If the passage does not adequately "
+        "answer the question, say that the available passage is insufficient; "
+        "do not force a match. Do not add generic self-help or practical "
+        "application unless the user explicitly asks for advice. Do not invent "
+        "facts, promises, punishments, quotations, or verse IDs."
     )
 
     messages = [
@@ -216,7 +219,10 @@ def generate_passage_message(used_verse_ids, selected):
             "role": "user",
             "content": [
                 {
-                    "text": f"Selected source passages:\n{context}"
+                    "text": (
+                        f"User question:\n{question}\n\n"
+                        f"Selected source passages:\n{context}"
+                    )
                 }
             ],
         },
@@ -258,7 +264,7 @@ def generate_passage_message(used_verse_ids, selected):
                         {
                             "text": (
                                 "The previous response was invalid. Return "
-                                "a non-empty principle and application "
+                                "a non-empty direct_answer and explanation "
                                 "grounded only in the supplied translations."
                             )
                         }
@@ -273,6 +279,13 @@ def generate_passage_message(used_verse_ids, selected):
 
 
 def format_passage_message(passage_message):
+    if "direct_answer" in passage_message:
+        return (
+            f"{passage_message['direct_answer']} "
+            f"{passage_message['explanation']}"
+        )
+
+    # Backward compatibility for older callers and tests.
     return (
         f"{passage_message['principle']} "
         f"Practical application: {passage_message['application']}"
@@ -285,6 +298,7 @@ def generate_grounded_answer(question, selected):
         selected,
     )
     passage_message = generate_passage_message(
+        question,
         used_verse_ids,
         selected,
     )
@@ -364,6 +378,7 @@ def answer_question(question):
 
     step_started_at = time.perf_counter()
     passage_message = generate_passage_message(
+        question,
         used_verse_ids,
         selected,
     )
