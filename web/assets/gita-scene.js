@@ -18,6 +18,7 @@
   let viewWidth = innerWidth;
   let viewHeight = innerHeight;
   let scrollRange = 1;
+  let lastFrameTime = 0;
 
   function measure() {
     viewWidth = innerWidth;
@@ -58,10 +59,14 @@
     if (Math.abs(video.currentTime - time) > 0.04) video.currentTime = time;
   }
 
-  function tick() {
+  function tick(now) {
     request = 0;
     if (!active || document.hidden) return;
-    smoothed += (target - smoothed) * 0.12;
+    // Frame-rate independent smoothing: a 120Hz display must not settle twice
+    // as fast as a 60Hz one, or the scrub feels different on every machine.
+    const delta = lastFrameTime ? Math.min(now - lastFrameTime, 50) : 16.7;
+    lastFrameTime = now;
+    smoothed += (target - smoothed) * (1 - Math.pow(0.88, delta / 16.7));
     if (Math.abs(target - smoothed) < 0.0005) smoothed = target;
     if (cacheReady) draw();
     else seekFallback();
@@ -176,7 +181,7 @@
       });
     }, { threshold: 0.15 });
     reveals.forEach((element, i) => {
-      element.style.setProperty('--reveal-delay', `${Math.min(i % 3, 2) * 100}ms`);
+      element.style.setProperty('--reveal-delay', `${Math.min(i % 3, 2) * 60}ms`);
       observer.observe(element);
     });
   }

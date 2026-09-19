@@ -446,12 +446,21 @@
         return `${Number(value).toFixed(2)}s`;
       }
 
+      function swapButtonLabel(nextLabel) {
+        if (buttonLabel.textContent === nextLabel) return;
+        // A blur mask bridges the two words so the swap reads as one label
+        // changing rather than two labels trading places.
+        buttonLabel.dataset.swapping = "true";
+        window.setTimeout(() => {
+          buttonLabel.textContent = nextLabel;
+          buttonLabel.dataset.swapping = "false";
+        }, 120);
+      }
+
       function setLoading(isLoading) {
         submitButton.disabled = isLoading;
         submitButton.dataset.loading = String(isLoading);
-        buttonLabel.textContent = isLoading
-          ? "Finding a passage…"
-          : "Find a passage";
+        swapButtonLabel(isLoading ? "Finding a passage…" : "Find a passage");
         questionInput.setAttribute("aria-busy", String(isLoading));
         skeletonSection.dataset.visible = String(isLoading);
         skeletonSection.setAttribute("aria-hidden", String(!isLoading));
