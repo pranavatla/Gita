@@ -252,6 +252,28 @@
             </div>
           </div>
         </div>
+
+        <details class="trace-panel">
+          <summary>How this answer was found <span aria-hidden="true">+</span></summary>
+          <div class="trace-grid">
+            <div>
+              <h3>Queries sent to retrieval</h3>
+              <pre class="trace-output" id="traceQueries"></pre>
+            </div>
+            <div>
+              <h3>RRF fused candidates</h3>
+              <pre class="trace-output" id="traceFused"></pre>
+            </div>
+            <div>
+              <h3>BGE reranked candidates</h3>
+              <pre class="trace-output" id="traceReranked"></pre>
+            </div>
+            <div>
+              <h3>Claude selection</h3>
+              <pre class="trace-output" id="traceSelected"></pre>
+            </div>
+          </div>
+        </details>
       </section>
 
 
@@ -267,19 +289,19 @@
           </p>
         </article>
         <article class="figure" data-reveal>
-          <span class="figure-value">3</span>
+          <span class="figure-value">4</span>
           <h2 class="figure-label">Semantic phrases generated</h2>
           <p class="figure-note">
-            Nova Lite rewrites one real situation into focused search phrases,
+            Claude Sonnet rewrites one natural question into focused search phrases,
             while fixed domain terms add Gita-specific concepts.
           </p>
         </article>
         <article class="figure" data-reveal>
-          <span class="figure-value">8</span>
+          <span class="figure-value">20</span>
           <h2 class="figure-label">Candidates reranked</h2>
           <p class="figure-note">
             The local BGE cross-encoder compares the strongest candidates with
-            the original question and keeps the best four.
+            the question plus intent facets and keeps the best six.
           </p>
         </article>
       </section>
@@ -314,21 +336,21 @@
           <article class="pipeline-card" data-reveal>
             <h3>Query intelligence</h3>
             <p>
-              Amazon Nova Lite decomposes the scenario into three semantic phrases
+              Claude Sonnet creates four retrieval facets, including ideal evidence,
               while a controlled domain map adds source-language concepts and synonyms.
             </p>
             <div class="function-list">
               <code>generate_search_queries()</code>
               <code>expand_domain_concepts()</code>
-              <code>Amazon Nova Lite</code>
+              <code>Claude Sonnet 4.6</code>
             </div>
           </article>
 
           <article class="pipeline-card" data-reveal>
-            <h3>Vector retrieval</h3>
+            <h3>Hybrid retrieval</h3>
             <p>
-              Titan embeds the question, then the app searches the local 700-verse
-              vector cache across the original question, generated phrases, and
+              Titan semantic search and BM25 lexical search run across the local
+              700-verse cache for the original question, generated facets, and
               deterministic domain expansions.
             </p>
             <div class="function-list">
@@ -342,12 +364,12 @@
             <h3>Rank fusion</h3>
             <p>
               Reciprocal Rank Fusion merges results from every search, rewards
-              repeated evidence, removes duplicate verses, and keeps the top 8 candidates.
+              repeated evidence, removes duplicate verses, and keeps the top 20 candidates.
             </p>
             <div class="function-list">
               <code>RRF_CONSTANT = 60</code>
-              <code>RESULTS_PER_QUERY = 5</code>
-              <code>MAX_RERANK_CANDIDATES = 8</code>
+              <code>RESULTS_PER_QUERY = 10</code>
+              <code>MAX_RERANK_CANDIDATES = 20</code>
             </div>
           </article>
 
@@ -355,7 +377,7 @@
             <h3>Neural reranking</h3>
             <p>
               A cached local BGE cross-encoder scores each candidate against the original
-              question, then returns the best four passages.
+              question plus its intent facets, then returns the best six passages.
             </p>
             <div class="function-list">
               <code>load_reranker()</code>
@@ -373,21 +395,21 @@
             <div class="function-list">
               <code>select_verse_ids()</code>
               <code>validate_selection()</code>
-              <code>Amazon Nova Lite</code>
+              <code>Claude Sonnet 4.6</code>
             </div>
           </article>
 
           <article class="pipeline-card" data-reveal>
             <h3>Grounded generation</h3>
             <p>
-              A second Bedrock call receives only the selected translation, separating
+              A second Bedrock call receives the question and selected translation, separating
               retrieval from response writing to reduce unsupported invention.
             </p>
             <div class="function-list">
               <code>build_context()</code>
               <code>generate_passage_message()</code>
               <code>validate_message()</code>
-              <code>Amazon Nova Lite</code>
+              <code>Claude Sonnet 4.6</code>
             </div>
           </article>
 
@@ -440,6 +462,10 @@
         timingVerseSelection: document.querySelector("#timingVerseSelection"),
         timingFinalAnswerGeneration: document.querySelector("#timingFinalAnswerGeneration"),
         timingTotalPipeline: document.querySelector("#timingTotalPipeline"),
+        traceQueries: document.querySelector("#traceQueries"),
+        traceFused: document.querySelector("#traceFused"),
+        traceReranked: document.querySelector("#traceReranked"),
+        traceSelected: document.querySelector("#traceSelected"),
       };
 
       function formatSeconds(value) {
@@ -499,6 +525,21 @@
         resultFields.timingTotalPipeline.textContent = formatSeconds(
           data.timings.total_pipeline
         );
+        resultFields.traceQueries.textContent = data.trace.queries
+          .map((query, index) => `${index + 1}. ${query}`)
+          .join("\n");
+        resultFields.traceFused.textContent = data.trace.fused_candidates
+          .map((candidate, index) =>
+            `${index + 1}. ${candidate.id} · RRF ${candidate.rrf_score.toFixed(4)} · ${candidate.sources.join(" + ")} · ${candidate.match_count} matches`
+          )
+          .join("\n");
+        resultFields.traceReranked.textContent = data.trace.reranked_candidates
+          .map((candidate, index) =>
+            `${index + 1}. ${candidate.id} · BGE ${candidate.score.toFixed(4)}`
+          )
+          .join("\n");
+        resultFields.traceSelected.textContent =
+          data.trace.selected_verse_ids.join(", ");
         resultSection.dataset.visible = "true";
         resultSection.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
       }
@@ -548,7 +589,7 @@
             );
           }
 
-          if (!data?.message || !data?.passage || !data?.timings) {
+          if (!data?.message || !data?.passage || !data?.timings || !data?.trace) {
             throw new Error("The API returned an incomplete answer.");
           }
 

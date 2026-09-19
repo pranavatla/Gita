@@ -47,11 +47,31 @@ class TimingsResponse(BaseModel):
     total_pipeline: float
 
 
+class FusedCandidateTrace(BaseModel):
+    id: str
+    rrf_score: float
+    sources: list[str]
+    match_count: int
+
+
+class RerankedCandidateTrace(BaseModel):
+    id: str
+    score: float
+
+
+class RetrievalTraceResponse(BaseModel):
+    queries: list[str]
+    fused_candidates: list[FusedCandidateTrace]
+    reranked_candidates: list[RerankedCandidateTrace]
+    selected_verse_ids: list[str]
+
+
 class AnswerResponse(BaseModel):
     message: str
     total_seconds: float
     timings: TimingsResponse
     passage: PassageResponse
+    trace: RetrievalTraceResponse
 
 
 @app.get("/", include_in_schema=False)
@@ -116,4 +136,5 @@ def create_answer(request: QuestionRequest):
             transliteration=metadata["transliteration"],
             english=candidate["document"],
         ),
+        trace=RetrievalTraceResponse(**answer["trace"]),
     )

@@ -396,6 +396,31 @@ def answer_question(question):
         "used_verse_ids": used_verse_ids,
         "timings": timings,
         "total_seconds": total_seconds,
+        "trace": {
+            "queries": search_queries,
+            "fused_candidates": [
+                {
+                    "id": candidate["id"],
+                    "rrf_score": candidate["rrf_score"],
+                    "sources": sorted(
+                        {
+                            match["retrieval_type"]
+                            for match in candidate["matches"]
+                        }
+                    ),
+                    "match_count": len(candidate["matches"]),
+                }
+                for candidate in candidates
+            ],
+            "reranked_candidates": [
+                {
+                    "id": result["candidate"]["id"],
+                    "score": result["combined_score"],
+                }
+                for result in selected
+            ],
+            "selected_verse_ids": used_verse_ids,
+        },
     }
 
     print(f"total pipeline: {total_seconds:.2f}s")
