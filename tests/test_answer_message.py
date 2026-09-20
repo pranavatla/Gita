@@ -20,6 +20,7 @@ sys.modules["rerank"] = rerank
 from answer import (
     build_grounding_summary,
     format_passage_message,
+    repair_grounded_answer,
     validate_grounded_answer,
 )
 
@@ -126,6 +127,65 @@ class FormatPassageMessageTests(unittest.TestCase):
 
         self.assertEqual(grounding["confidence"], "high")
         self.assertEqual(grounding["citations"][0]["id"], "BG2.47")
+
+    def test_repairs_malformed_grounding_support(self):
+        selected = [
+            {
+                "candidate": {
+                    "id": "BG6.35",
+                    "document": (
+                        "It is undoubtedly very difficult to curb the "
+                        "restless mind, but it is possible by suitable "
+                        "practice and by detachment."
+                    ),
+                    "metadata": {
+                        "sanskrit": "asamsayam mahabaho",
+                        "transliteration": "asamsayam mahabaho",
+                    },
+                }
+            },
+            {
+                "candidate": {
+                    "id": "BG6.26",
+                    "document": (
+                        "From whatever and wherever the mind wanders, "
+                        "one must bring it back under the control of the self."
+                    ),
+                    "metadata": {
+                        "sanskrit": "yato yato niscalati",
+                        "transliteration": "yato yato niscalati",
+                    },
+                }
+            },
+        ]
+        malformed = {
+            "direct_answer": "A wandering mind can be trained.",
+            "explanation": "The selected passage points to practice and detachment.",
+            "confidence": "HIGH",
+            "cited_verse_ids": "6.35",
+            "claim_support": [
+                {
+                    "claim": "Practice helps steady the mind.",
+                    "verse_id": "BG6.35",
+                    "support": "The passage names practice and detachment.",
+                }
+            ],
+        }
+
+        repaired = repair_grounded_answer(
+            malformed,
+            ["BG6.35", "BG6.26"],
+            selected,
+        )
+
+        self.assertTrue(
+            validate_grounded_answer(
+                repaired,
+                ["BG6.35", "BG6.26"],
+            )
+        )
+        self.assertEqual(repaired["confidence"], "high")
+        self.assertEqual(repaired["cited_verse_ids"], ["BG6.35"])
 
 
 if __name__ == "__main__":
