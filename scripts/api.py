@@ -38,6 +38,28 @@ class PassageResponse(BaseModel):
     english: str
 
 
+class CitationResponse(BaseModel):
+    id: str
+    sanskrit: str
+    transliteration: str
+    english: str
+
+
+class ClaimSupportResponse(BaseModel):
+    claim: str
+    verse_ids: list[str]
+    support: str
+
+
+class GroundingResponse(BaseModel):
+    confidence: str
+    evidence_strength: str
+    evidence_reason: str
+    citations: list[CitationResponse]
+    claim_support: list[ClaimSupportResponse]
+    missing_context: str
+
+
 class TimingsResponse(BaseModel):
     query_generation: float
     retrieval: float
@@ -73,6 +95,7 @@ class AnswerResponse(BaseModel):
     total_seconds: float
     timings: TimingsResponse
     passage: PassageResponse
+    grounding: GroundingResponse
     trace: RetrievalTraceResponse
 
 
@@ -138,5 +161,6 @@ def create_answer(request: QuestionRequest):
             transliteration=metadata["transliteration"],
             english=candidate["document"],
         ),
+        grounding=GroundingResponse(**answer["grounding"]),
         trace=RetrievalTraceResponse(**answer["trace"]),
     )
