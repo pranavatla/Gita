@@ -221,6 +221,27 @@
           </article>
         </div>
 
+        <section class="grounding-panel" aria-labelledby="groundingTitle">
+          <div class="grounding-header">
+            <div>
+              <p class="panel-label" id="groundingTitle">Citation grounding</p>
+              <p class="grounding-summary" id="groundingSummary"></p>
+            </div>
+            <span class="confidence-badge" id="confidenceBadge"></span>
+          </div>
+          <div class="grounding-grid">
+            <div>
+              <h3>Cited verses</h3>
+              <div class="citation-list" id="citationList"></div>
+            </div>
+            <div>
+              <h3>Claim support</h3>
+              <div class="claim-list" id="claimSupportList"></div>
+            </div>
+          </div>
+          <p class="missing-context" id="missingContext"></p>
+        </section>
+
         <div class="timing-panel" aria-labelledby="timingTitle">
           <p class="panel-label" id="timingTitle">Latency for this response</p>
           <p class="timing-summary" id="timingSummary"></p>
@@ -268,7 +289,7 @@
               <pre class="trace-output" id="traceReranked"></pre>
             </div>
             <div>
-              <h3>Selected grounding verse</h3>
+              <h3>Selected grounding verses</h3>
               <pre class="trace-output" id="traceSelected"></pre>
             </div>
           </div>
@@ -473,6 +494,11 @@
         timingVerseSelection: document.querySelector("#timingVerseSelection"),
         timingFinalAnswerGeneration: document.querySelector("#timingFinalAnswerGeneration"),
         timingTotalPipeline: document.querySelector("#timingTotalPipeline"),
+        groundingSummary: document.querySelector("#groundingSummary"),
+        confidenceBadge: document.querySelector("#confidenceBadge"),
+        citationList: document.querySelector("#citationList"),
+        claimSupportList: document.querySelector("#claimSupportList"),
+        missingContext: document.querySelector("#missingContext"),
         traceQueries: document.querySelector("#traceQueries"),
         traceFused: document.querySelector("#traceFused"),
         traceReranked: document.querySelector("#traceReranked"),
@@ -492,6 +518,42 @@
           buttonLabel.textContent = nextLabel;
           buttonLabel.dataset.swapping = "false";
         }, 120);
+      }
+
+      function renderCitationList(citations) {
+        resultFields.citationList.replaceChildren(
+          ...citations.map((citation) => {
+            const item = document.createElement("article");
+            item.className = "citation-item";
+
+            const title = document.createElement("h4");
+            title.textContent = citation.id;
+
+            const english = document.createElement("p");
+            english.textContent = citation.english;
+
+            item.append(title, english);
+            return item;
+          })
+        );
+      }
+
+      function renderClaimSupport(claims) {
+        resultFields.claimSupportList.replaceChildren(
+          ...claims.map((claim) => {
+            const item = document.createElement("article");
+            item.className = "claim-item";
+
+            const title = document.createElement("h4");
+            title.textContent = claim.claim;
+
+            const support = document.createElement("p");
+            support.textContent = `${claim.verse_ids.join(", ")}: ${claim.support}`;
+
+            item.append(title, support);
+            return item;
+          })
+        );
       }
 
       function setLoading(isLoading) {
@@ -515,6 +577,15 @@
         resultFields.sanskrit.textContent = data.passage.sanskrit;
         resultFields.transliteration.textContent = data.passage.transliteration;
         resultFields.english.textContent = data.passage.english;
+        resultFields.confidenceBadge.textContent = `${data.grounding.confidence} confidence`;
+        resultFields.confidenceBadge.dataset.confidence = data.grounding.confidence;
+        resultFields.groundingSummary.textContent =
+          `Evidence strength: ${data.grounding.evidence_strength}. ${data.grounding.evidence_reason}`;
+        renderCitationList(data.grounding.citations);
+        renderClaimSupport(data.grounding.claim_support);
+        resultFields.missingContext.textContent = data.grounding.missing_context
+          ? `Limitation: ${data.grounding.missing_context}`
+          : "";
         resultFields.timingSummary.innerHTML =
           `This answer was generated in <strong>${formatSeconds(data.total_seconds)}</strong> on this run. ` +
           `The breakdown below shows exactly where the time went across the pipeline.`;
@@ -602,7 +673,7 @@
             );
           }
 
-          if (!data?.message || !data?.passage || !data?.timings || !data?.trace) {
+          if (!data?.message || !data?.passage || !data?.grounding || !data?.timings || !data?.trace) {
             throw new Error("The API returned an incomplete answer.");
           }
 
