@@ -128,6 +128,57 @@ class FormatPassageMessageTests(unittest.TestCase):
         self.assertEqual(grounding["confidence"], "high")
         self.assertEqual(grounding["citations"][0]["id"], "BG2.47")
 
+    def test_grounding_summary_only_mentions_visible_citations(self):
+        selected = [
+            {
+                "candidate": {
+                    "id": "BG3.41",
+                    "document": "Regulate the senses and curb harmful desire.",
+                    "metadata": {
+                        "sanskrit": "tasmat tvam indriyany adau",
+                        "transliteration": "tasmat tvam indriyany adau",
+                    },
+                }
+            },
+            {
+                "candidate": {
+                    "id": "BG6.35",
+                    "document": "The mind is controlled by practice and detachment.",
+                    "metadata": {
+                        "sanskrit": "abhyasena tu kaunteya",
+                        "transliteration": "abhyasena tu kaunteya",
+                    },
+                }
+            },
+        ]
+
+        grounding = build_grounding_summary(
+            evidence_strength="strong",
+            evidence_reason=(
+                "BG3.41 addresses sense regulation, BG6.35 addresses "
+                "practice, and BG5.27 describes techniques for sense "
+                "regulation."
+            ),
+            cited_verse_ids=["BG3.41", "BG6.35"],
+            selected=selected,
+            claim_support=[
+                {
+                    "claim": "Control your senses.",
+                    "verse_ids": ["BG3.41"],
+                    "support": "The verse tells Arjuna to regulate the senses.",
+                },
+                {
+                    "claim": "Practice detachment.",
+                    "verse_ids": ["BG6.35"],
+                    "support": "The verse names practice and detachment.",
+                },
+            ],
+        )
+
+        self.assertIn("BG3.41", grounding["evidence_reason"])
+        self.assertIn("BG6.35", grounding["evidence_reason"])
+        self.assertNotIn("BG5.27", grounding["evidence_reason"])
+
     def test_repairs_malformed_grounding_support(self):
         selected = [
             {
