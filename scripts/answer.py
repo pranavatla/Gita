@@ -53,6 +53,52 @@ MESSAGE_SCHEMA = {
     ],
 }
 
+GROUNDING_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "direct_answer": {"type": "string"},
+        "explanation": {"type": "string"},
+        "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+        },
+        "cited_verse_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 1,
+            "maxItems": 3,
+        },
+        "claim_support": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "claim": {"type": "string"},
+                    "verse_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 1,
+                        "maxItems": 3,
+                    },
+                    "support": {"type": "string"},
+                },
+                "required": ["claim", "verse_ids", "support"],
+            },
+            "minItems": 1,
+            "maxItems": 4,
+        },
+        "missing_context": {"type": "string"},
+    },
+    "required": [
+        "direct_answer",
+        "explanation",
+        "confidence",
+        "cited_verse_ids",
+        "claim_support",
+        "missing_context",
+    ],
+}
+
 
 def build_candidate_context(candidates):
     passages = []
@@ -381,11 +427,165 @@ def validate_message(result):
     return True
 
 
-def generate_passage_message(question, used_verse_ids, selected):
-    selected_by_id = {
+def selected_passages_by_id(selected):
+    return {
         result["candidate"]["id"]: result
         for result in selected
     }
+
+
+def validate_grounded_answer(result, allowed_verse_ids):
+    if not isinstance(result, dict):
+        return False
+
+    allowed_verse_ids = set(allowed_verse_ids)
+    direct_answer = result.get("direct_answer")
+    explanation = result.get("explanation")
+    confidence = result.get("confidence")
+    cited_verse_ids = result.get("cited_verse_ids")
+    claim_support = result.get("claim_support")
+    missing_context = result.get("missing_context")
+
+    if confidence not in {"high", "medium", "low"}:
+        return False
+
+    if not isinstance(missing_context, str):
+        return False
+
+    if not validate_message(
+        {
+            "direct_answer": direct_answer,
+            "explanation": explanation,
+        }
+    ):
+        return False
+
+    if not isinstance(cited_verse_ids, list):
+        return False
+
+    cleaned_citations = []
+    for verse_id in cited_verse_ids:
+        normalized_id = normalize_verse_id(verse_id)
+
+        if normalized_id not in allowed_verse_ids:
+            return False
+
+        if normalized_id not in cleaned_citations:
+            cleaned_citations.append(normalized_id)
+
+    if not cleaned_citations or len(cleaned_citations) > 3:
+        return False
+
+    if not isinstance(claim_support, list):
+        return False
+
+    cleaned_claims = []
+    for item in claim_support:
+        if not isinstance(item, dict):
+            return False
+
+        claim = item.get("claim")
+        support = item.get("support")
+        verse_ids = item.get("verse_ids")
+
+        if not isinstance(claim, str) or not claim.strip():
+            return False
+
+        if not isinstance(support, str) or not support.strip():
+            return False
+
+        if not isinstance(verse_ids, list) or not verse_ids:
+            return False
+
+        cleaned_verse_ids = []
+        for verse_id in verse_ids:
+            normalized_id = normalize_verse_id(verse_id)
+
+            if normalized_id not in allowed_verse_ids:
+                return False
+
+            if normalized_id not in cleaned_verse_ids:
+                cleaned_verse_ids.append(normalized_id)
+
+        if not cleaned_verse_ids:
+            return False
+
+        cleaned_claims.append(
+            {
+                "claim": claim.strip(),
+                "verse_ids": cleaned_verse_ids,
+                "support": support.strip(),
+            }
+        )
+
+    if not cleaned_claims or len(cleaned_claims) > 4:
+        return False
+
+    used_in_claims = {
+        verse_id
+        for item in cleaned_claims
+        for verse_id in item["verse_ids"]
+    }
+
+    if not set(cleaned_citations).issubset(used_in_claims):
+        return False
+
+    result["direct_answer"] = direct_answer.strip()
+    result["explanation"] = explanation.strip()
+    result["confidence"] = confidence
+    result["cited_verse_ids"] = cleaned_citations
+    result["claim_support"] = cleaned_claims
+    result["missing_context"] = missing_context.strip()
+    return True
+
+
+def build_citations(verse_ids, selected):
+    selected_by_id = selected_passages_by_id(selected)
+    citations = []
+
+    for verse_id in verse_ids:
+        candidate = selected_by_id[verse_id]["candidate"]
+        metadata = candidate["metadata"]
+        citations.append(
+            {
+                "id": verse_id,
+                "english": candidate["document"],
+                "sanskrit": metadata["sanskrit"],
+                "transliteration": metadata["transliteration"],
+            }
+        )
+
+    return citations
+
+
+def build_grounding_summary(
+    evidence_strength,
+    evidence_reason,
+    cited_verse_ids,
+    selected,
+    claim_support=None,
+    confidence=None,
+    missing_context="",
+):
+    if confidence is None:
+        confidence = {
+            "strong": "high",
+            "partial": "medium",
+            "none": "low",
+        }.get(evidence_strength, "low")
+
+    return {
+        "confidence": confidence,
+        "evidence_strength": evidence_strength,
+        "evidence_reason": evidence_reason,
+        "citations": build_citations(cited_verse_ids, selected),
+        "claim_support": claim_support or [],
+        "missing_context": missing_context,
+    }
+
+
+def generate_passage_message(question, used_verse_ids, selected):
+    selected_by_id = selected_passages_by_id(selected)
     chosen_passages = [
         selected_by_id[verse_id]
         for verse_id in used_verse_ids
@@ -401,11 +601,15 @@ def generate_passage_message(question, used_verse_ids, selected):
         "or a verse ID. Do not mention the verse ID inside the answer because "
         "the UI already shows it. explanation must connect the answer to the "
         "selected translation and separate explicit meaning from reasonable "
-        "inference. For certainty, guarantee, proof, punishment, karma, or "
+        "inference. cited_verse_ids must contain only supplied IDs. "
+        "claim_support must list each major answer claim, the supplied verse "
+        "ID that supports it, and a short paraphrase of the evidence. For "
+        "certainty, guarantee, proof, punishment, karma, or "
         "rebirth questions, state what the passage supports within the Gita's "
         "worldview; do not claim a mechanical or courtroom-style guarantee "
         "unless the supplied passage explicitly says that. If the passage is "
-        "insufficient, say so plainly. Do not add generic advice unless asked. "
+        "insufficient, say so plainly and put the limitation in "
+        "missing_context. Do not add generic advice unless asked. "
         "Do not invent facts, promises, punishments, quotations, or verse IDs."
     )
 
@@ -428,9 +632,9 @@ def generate_passage_message(question, used_verse_ids, selected):
             messages=messages,
             system_prompt=(
                 f"{system_prompt} Return only valid JSON matching this "
-                f"schema: {json.dumps(MESSAGE_SCHEMA)}"
+                f"schema: {json.dumps(GROUNDING_SCHEMA)}"
             ),
-            max_tokens=300,
+            max_tokens=650,
             temperature=0,
         )
 
@@ -439,7 +643,7 @@ def generate_passage_message(question, used_verse_ids, selected):
         except json.JSONDecodeError:
             result = {}
 
-        if validate_message(result):
+        if validate_grounded_answer(result, used_verse_ids):
             return result
 
         print(
@@ -461,8 +665,9 @@ def generate_passage_message(question, used_verse_ids, selected):
                                 "The previous response was invalid. Return "
                                 "a concise direct_answer and explanation: "
                                 "three sentences maximum, no verse IDs, no "
-                                "boilerplate opening, grounded only in the "
-                                "supplied translation."
+                                "boilerplate opening, cited_verse_ids using "
+                                "only supplied IDs, and claim_support "
+                                "grounded only in the supplied translation."
                             )
                         }
                     ],
@@ -564,9 +769,14 @@ def answer_question(question):
         f"{elapsed:.2f}s"
     )
 
-    used_verse_ids = [selected[0]["candidate"]["id"]]
     evidence_strength = selected[0]["evidence_strength"]
     evidence_reason = selected[0]["evidence_reason"]
+    used_verse_ids = [
+        result["candidate"]["id"]
+        for result in selected[:2]
+    ] if evidence_strength == "strong" else [
+        selected[0]["candidate"]["id"]
+    ]
 
     step_started_at = time.perf_counter()
     if evidence_strength == "strong":
@@ -576,10 +786,26 @@ def answer_question(question):
             selected,
         )
         message = format_passage_message(passage_message)
+        grounding = build_grounding_summary(
+            evidence_strength=evidence_strength,
+            evidence_reason=evidence_reason,
+            cited_verse_ids=passage_message["cited_verse_ids"],
+            selected=selected,
+            claim_support=passage_message["claim_support"],
+            confidence=passage_message["confidence"],
+            missing_context=passage_message["missing_context"],
+        )
     else:
         message = build_weak_evidence_message(
             evidence_strength,
             evidence_reason,
+        )
+        grounding = build_grounding_summary(
+            evidence_strength=evidence_strength,
+            evidence_reason=evidence_reason,
+            cited_verse_ids=used_verse_ids,
+            selected=selected,
+            missing_context=evidence_reason,
         )
     elapsed = time.perf_counter() - step_started_at
     timings["final_answer_generation"] = elapsed
@@ -593,6 +819,7 @@ def answer_question(question):
         "evidence_strength": evidence_strength,
         "evidence_reason": evidence_reason,
         "used_verse_ids": used_verse_ids,
+        "grounding": grounding,
         "timings": timings,
         "total_seconds": total_seconds,
         "trace": {
