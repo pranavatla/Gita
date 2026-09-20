@@ -10,6 +10,7 @@
     <title>Gita Reflection — 700 verses. One grounded answer.</title>
 
     <meta name="theme-color" content="#faf6ee" />
+    <meta name="app-version" content="citation-grounding-20260920-2" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Bhagavad Gita RAG" />
     <meta property="og:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
@@ -36,7 +37,7 @@
       rel="stylesheet"
     />
     <link rel="preload" as="image" href="/assets/gita-hero-poster.jpg" />
-    <link rel="stylesheet" href="/assets/gita-scene.css" />
+    <link rel="stylesheet" href="/assets/gita-scene.css?v=citation-grounding-20260920-2" />
   </head>
   <body>
     <div class="scene-backdrop" id="sceneBackdrop" aria-hidden="true">
@@ -84,7 +85,7 @@
         <section class="cinema-section reflection" id="reflection" aria-labelledby="reflectionTitle">
           <div class="section-top">
             <p class="glass-badge" data-reveal>Wisdom for your moment</p>
-            <p class="section-intro" data-reveal>A question from your life.<br />A response grounded in<br />one supporting verse.</p>
+            <p class="section-intro" data-reveal>A question from your life.<br />A response grounded in<br />cited verses.</p>
           </div>
           <div class="reflection-layout">
             <div class="reflection-copy">
@@ -408,13 +409,13 @@
           <article class="pipeline-card" data-reveal>
             <h3>Grounding selection</h3>
             <p>
-              The strongest verse in Claude's validated ranking becomes the single
-              grounding source. No second model decision can discard better evidence.
+              The strongest verses in Claude's validated ranking become cited
+              grounding sources. No second model decision can discard better evidence.
             </p>
             <div class="function-list">
               <code>ranked_verse_ids[0]</code>
               <code>validate_ranking()</code>
-              <code>one supporting verse</code>
+              <code>cited grounding</code>
             </div>
           </article>
 
@@ -720,6 +721,6 @@
       updateCharacterCount();
       checkApiHealth();
     </script>
-    <script src="/assets/gita-scene.js"></script>
+    <script src="/assets/gita-scene.js?v=citation-grounding-20260920-2"></script>
   </body>
 </html>
