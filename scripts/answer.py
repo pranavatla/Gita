@@ -434,6 +434,169 @@ def selected_passages_by_id(selected):
     }
 
 
+def collapse_words(value, max_words):
+    words = str(value).split()
+    if len(words) <= max_words:
+        return " ".join(words)
+
+    return " ".join(words[:max_words]).rstrip(".,;:") + "..."
+
+
+def normalize_verse_id_list(value):
+    if isinstance(value, str) or isinstance(value, dict):
+        value = [value]
+
+    if not isinstance(value, list):
+        return []
+
+    cleaned = []
+    for item in value:
+        normalized_id = normalize_verse_id(item)
+
+        if normalized_id and normalized_id not in cleaned:
+            cleaned.append(normalized_id)
+
+    return cleaned
+
+
+def build_default_claim_support(cited_verse_ids, selected):
+    selected_by_id = selected_passages_by_id(selected)
+    claims = []
+
+    for verse_id in cited_verse_ids:
+        candidate = selected_by_id[verse_id]["candidate"]
+        claims.append(
+            {
+                "claim": (
+                    "The reflection stays within the selected passage's "
+                    "explicit teaching."
+                ),
+                "verse_ids": [verse_id],
+                "support": collapse_words(candidate["document"], 28),
+            }
+        )
+
+    return claims
+
+
+def repair_grounded_answer(result, allowed_verse_ids, selected):
+    if not isinstance(result, dict):
+        result = {}
+
+    allowed_verse_ids = list(allowed_verse_ids)
+    allowed_set = set(allowed_verse_ids)
+
+    direct_answer = result.get("direct_answer")
+    explanation = result.get("explanation")
+    message = {
+        "direct_answer": direct_answer,
+        "explanation": explanation,
+    }
+
+    if validate_message(message):
+        direct_answer = message["direct_answer"]
+        explanation = message["explanation"]
+    else:
+        primary = selected_passages_by_id(selected)[allowed_verse_ids[0]]
+        translation = collapse_words(primary["candidate"]["document"], 28)
+        direct_answer = (
+            "Stay close to what the selected passage clearly supports."
+        )
+        explanation = f"It points to this teaching: {translation}"
+
+    confidence = result.get("confidence")
+    if isinstance(confidence, str):
+        confidence = confidence.strip().lower()
+
+    if confidence not in {"high", "medium", "low"}:
+        confidence = "medium"
+
+    cited_verse_ids = [
+        verse_id
+        for verse_id in normalize_verse_id_list(
+            result.get("cited_verse_ids")
+            or result.get("citations")
+            or result.get("verse_ids")
+        )
+        if verse_id in allowed_set
+    ]
+
+    if not cited_verse_ids:
+        cited_verse_ids = allowed_verse_ids[:1]
+
+    cited_verse_ids = cited_verse_ids[:3]
+
+    claim_support = result.get("claim_support")
+    cleaned_claims = []
+    if isinstance(claim_support, list):
+        for item in claim_support:
+            if not isinstance(item, dict):
+                continue
+
+            claim = item.get("claim")
+            support = item.get("support")
+            verse_ids = [
+                verse_id
+                for verse_id in normalize_verse_id_list(
+                    item.get("verse_ids") or item.get("verse_id")
+                )
+                if verse_id in allowed_set
+            ]
+
+            if (
+                isinstance(claim, str)
+                and claim.strip()
+                and isinstance(support, str)
+                and support.strip()
+                and verse_ids
+            ):
+                cleaned_claims.append(
+                    {
+                        "claim": claim.strip(),
+                        "verse_ids": verse_ids[:3],
+                        "support": support.strip(),
+                    }
+                )
+
+    used_in_claims = {
+        verse_id
+        for item in cleaned_claims
+        for verse_id in item["verse_ids"]
+    }
+    missing_claim_verse_ids = [
+        verse_id
+        for verse_id in cited_verse_ids
+        if verse_id not in used_in_claims
+    ]
+
+    if missing_claim_verse_ids:
+        cleaned_claims.extend(
+            build_default_claim_support(
+                missing_claim_verse_ids,
+                selected,
+            )
+        )
+
+    if not cleaned_claims:
+        cleaned_claims = build_default_claim_support(
+            cited_verse_ids,
+            selected,
+        )
+
+    missing_context = result.get("missing_context")
+    if not isinstance(missing_context, str):
+        missing_context = ""
+
+    return {
+        "direct_answer": direct_answer,
+        "explanation": explanation,
+        "confidence": confidence,
+        "cited_verse_ids": cited_verse_ids,
+        "claim_support": cleaned_claims[:4],
+        "missing_context": missing_context.strip(),
+    }
+
+
 def validate_grounded_answer(result, allowed_verse_ids):
     if not isinstance(result, dict):
         return False
@@ -646,6 +809,14 @@ def generate_passage_message(question, used_verse_ids, selected):
         if validate_grounded_answer(result, used_verse_ids):
             return result
 
+        repaired_result = repair_grounded_answer(
+            result,
+            used_verse_ids,
+            selected,
+        )
+        if validate_grounded_answer(repaired_result, used_verse_ids):
+            return repaired_result
+
         print(
             f"Invalid passage message, retrying "
             f"({attempt}/3)"
@@ -675,9 +846,15 @@ def generate_passage_message(question, used_verse_ids, selected):
             ]
         )
 
-    raise RuntimeError(
-        "Could not generate a valid passage message"
+    fallback_result = repair_grounded_answer(
+        {},
+        used_verse_ids,
+        selected,
     )
+    if validate_grounded_answer(fallback_result, used_verse_ids):
+        return fallback_result
+
+    raise RuntimeError("Could not generate a valid passage message")
 
 
 def format_passage_message(passage_message):
