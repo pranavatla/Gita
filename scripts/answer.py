@@ -721,6 +721,29 @@ def build_citations(verse_ids, selected):
     return citations
 
 
+def build_visible_evidence_reason(evidence_reason, cited_verse_ids, claim_support):
+    if not claim_support:
+        cited = ", ".join(cited_verse_ids)
+        return f"The visible citations are limited to {cited}."
+
+    summaries = []
+    for item in claim_support:
+        verse_ids = [
+            verse_id
+            for verse_id in item.get("verse_ids", [])
+            if verse_id in cited_verse_ids
+        ]
+        claim = item.get("claim", "").strip()
+
+        if verse_ids and claim:
+            summaries.append(f"{', '.join(verse_ids)} supports: {claim}")
+
+    if summaries:
+        return " ".join(summaries)
+
+    return evidence_reason
+
+
 def build_grounding_summary(
     evidence_strength,
     evidence_reason,
@@ -740,7 +763,11 @@ def build_grounding_summary(
     return {
         "confidence": confidence,
         "evidence_strength": evidence_strength,
-        "evidence_reason": evidence_reason,
+        "evidence_reason": build_visible_evidence_reason(
+            evidence_reason,
+            cited_verse_ids,
+            claim_support or [],
+        ),
         "citations": build_citations(cited_verse_ids, selected),
         "claim_support": claim_support or [],
         "missing_context": missing_context,
