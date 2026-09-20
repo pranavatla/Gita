@@ -1,12 +1,26 @@
 import sys
 import unittest
+import types
 from pathlib import Path
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+bedrock_client = types.ModuleType("bedrock_client")
+bedrock_client.converse_text = lambda *args, **kwargs: ""
+bedrock_client.embed_texts = lambda texts: []
+bedrock_client.parse_json_text = lambda value: value
+sys.modules["bedrock_client"] = bedrock_client
+
+rank_bm25 = types.ModuleType("rank_bm25")
+rank_bm25.BM25Okapi = object
+sys.modules["rank_bm25"] = rank_bm25
+
 from rerank import expand_domain_concepts
+
+sys.modules.pop("bedrock_client", None)
+sys.modules.pop("rank_bm25", None)
 
 
 class DomainExpansionTests(unittest.TestCase):
