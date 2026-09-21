@@ -84,6 +84,8 @@ h1, .reflection-copy h2 { font-size: 64px; font-weight: 500; line-height: 1.12; 
 .reflection-description { margin-top: 24px; max-width: 480px; font-size: 19px; color: rgba(255,255,255,.84); }
 .reflection-copy h2 { font-size: 44px; }
 .reflection-copy h2, .reflection-description, .reflection .section-intro, .reflection .glass-badge { text-shadow: 0 1px 3px rgba(0,0,0,.9); }
+.reflection > .section-top { justify-content: flex-start; }
+.reflection > .section-top .section-intro { display: none; }
 .capabilities { margin-top: 30px; border-color: rgba(255,255,255,.2); border-radius: 8px; padding: 4px 22px; background: rgba(8,14,10,.42); backdrop-filter: blur(12px); }
 .capabilities > div { display: flex; gap: 22px; padding: 18px 0; }
 .capabilities > div + div { border-top: 1px solid rgba(255,255,255,.18); }
