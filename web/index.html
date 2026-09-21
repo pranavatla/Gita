@@ -10,7 +10,7 @@
     <title>Gita Reflection — 700 verses. One grounded answer.</title>
 
     <meta name="theme-color" content="#faf6ee" />
-    <meta name="app-version" content="unfiltered-scene-20260921-3" />
+    <meta name="app-version" content="journey-audit-20260921-1" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Bhagavad Gita RAG" />
     <meta property="og:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
@@ -37,7 +37,7 @@
       rel="stylesheet"
     />
     <link rel="preload" as="image" href="/assets/gita-hero-poster.jpg" />
-    <link rel="stylesheet" href="/assets/gita-scene.css?v=unfiltered-scene-20260921-3" />
+    <link rel="stylesheet" href="/assets/gita-scene.css?v=journey-audit-20260921-1" />
   </head>
   <body>
     <div class="scene-backdrop" id="sceneBackdrop" aria-hidden="true">
@@ -56,6 +56,7 @@
         <a href="#top">The dialogue <sup>700</sup></a>
         <a href="#reflection">Your reflection</a>
         <a href="#how-it-works">How it works</a>
+        <a href="#journey">Build journey</a>
       </nav>
       <a class="nav-cta" href="#reflection">Find a passage <svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 11 11 5M6.5 5H11v4.5"/></svg></a>
     </header>
@@ -93,8 +94,8 @@
               <p class="reflection-description" data-reveal>Describe what you are facing. Explore a practical reflection alongside the original Sanskrit and its English translation.</p>
               <div class="capabilities glass" data-reveal>
                 <div><span>01</span><p>Begin with your situation<small>Work, attention, anger, or a difficult decision.</small></p></div>
-                <div><span>02</span><p>Find a supporting verse<small>Search across the 700 verses of the Gita.</small></p></div>
-                <div><span>03</span><p>Reflect with context<small>Read the response alongside its source.</small></p></div>
+                <div><span>02</span><p>Find supporting verses<small>Search all 700 verses of the Gita.</small></p></div>
+                <div><span>03</span><p>Reflect with context<small>Read the response alongside its cited sources.</small></p></div>
               </div>
             </div>
         <form class="ask-card glass" id="questionForm">
@@ -308,18 +309,18 @@
         </article>
         <article class="figure" data-reveal>
           <span class="figure-value">4</span>
-          <h2 class="figure-label">Semantic phrases generated</h2>
+          <h2 class="figure-label">Retrieval facets generated</h2>
           <p class="figure-note">
-            Claude Sonnet rewrites one natural question into focused search phrases,
-            while fixed domain terms add Gita-specific concepts.
+            Claude generates four focused facets. The original question and
+            deterministic Gita-specific expansions are searched as well.
           </p>
         </article>
         <article class="figure" data-reveal>
           <span class="figure-value">20</span>
           <h2 class="figure-label">Candidates reranked</h2>
           <p class="figure-note">
-            Claude compares all 20 fused candidates with the natural question
-            and keeps the six strongest pieces of evidence.
+            Claude ranks up to 20 fused candidates against the natural question
+            and returns the six strongest evidence candidates.
           </p>
         </article>
       </section>
@@ -343,8 +344,8 @@
           <article class="pipeline-card" data-reveal>
             <h3>Corpus preparation</h3>
             <p>
-              Loads 700 Bhagavad Gita records, validates structured theme output,
-              and enriches every English translation before indexing.
+              The preparation job validates and enriches 700 verse records, then
+              persists translations, metadata, themes, and embeddings for retrieval.
             </p>
             <div class="function-list">
               <code>load_records()</code>
@@ -357,12 +358,12 @@
             <h3>Query intelligence</h3>
             <p>
               Claude Sonnet creates four retrieval facets, including ideal evidence,
-              while a controlled domain map adds source-language concepts and synonyms.
+              while a controlled domain map adds Gita-specific concepts and synonyms.
             </p>
             <div class="function-list">
               <code>generate_search_queries()</code>
               <code>expand_domain_concepts()</code>
-              <code>Claude Sonnet 4.6</code>
+              <code>Claude Sonnet 4.6 (default)</code>
             </div>
           </article>
 
@@ -375,7 +376,7 @@
             </p>
             <div class="function-list">
               <code>retrieve_candidates()</code>
-              <code>Titan Embed v2</code>
+              <code>Amazon Titan Text Embeddings V2</code>
               <code>local_vector_search.py</code>
             </div>
           </article>
@@ -396,24 +397,24 @@
           <article class="pipeline-card" data-reveal>
             <h3>Evidence reranking</h3>
             <p>
-              Claude ranks all 20 fused candidates against the natural question,
+              Claude ranks up to 20 fused candidates against the natural question,
               prioritizing direct doctrinal evidence over keyword overlap.
             </p>
             <div class="function-list">
               <code>rerank_and_select()</code>
               <code>doctrinal entailment</code>
-              <code>Claude Sonnet 4.6</code>
+              <code>Claude Sonnet 4.6 (default)</code>
             </div>
           </article>
 
           <article class="pipeline-card" data-reveal>
             <h3>Grounding selection</h3>
             <p>
-              The strongest verses in Claude's validated ranking become cited
-              grounding sources. No second model decision can discard better evidence.
+              The validated ranking defines the eligible evidence. Final generation
+              may cite one to three passages, but only from those selected sources.
             </p>
             <div class="function-list">
-              <code>ranked_verse_ids[0]</code>
+              <code>ranked_verse_ids[:2]</code>
               <code>validate_ranking()</code>
               <code>cited grounding</code>
             </div>
@@ -422,7 +423,7 @@
           <article class="pipeline-card" data-reveal>
             <h3>Grounded generation</h3>
             <p>
-              A final Bedrock call receives only the question and selected translation.
+              A final Bedrock call receives the question and selected verse context.
               If the selected evidence is weak, the app shows the closest verse
               as context instead of forcing a confident answer.
             </p>
@@ -430,7 +431,7 @@
               <code>build_context()</code>
               <code>generate_passage_message()</code>
               <code>faithfulness guardrails</code>
-              <code>Claude Sonnet 4.6</code>
+              <code>Claude Sonnet 4.6 (default)</code>
             </div>
           </article>
 
@@ -462,6 +463,22 @@
         </div>
       </section>
       </details>
+
+      <section class="journey-section" id="journey" aria-labelledby="journeyTitle">
+        <div class="journey-heading" data-reveal>
+          <p class="panel-label">Build journey</p>
+          <h2 id="journeyTitle">From retrieval demo to evaluated RAG</h2>
+          <p>Each revision addressed a concrete problem in relevance, latency, grounding, or delivery.</p>
+        </div>
+        <ol class="journey-list">
+          <li data-reveal><span class="journey-step">01</span><div><h3>Built the foundation</h3><p>Loaded all 700 verses, added Bedrock generation, packaged the service with Docker, and deployed it through ECR to EKS.</p></div></li>
+          <li data-reveal><span class="journey-step">02</span><div><h3>Removed retrieval bottlenecks</h3><p>Moved the production search path to a local cache of precomputed Titan embeddings, keeping the complete corpus ready in memory.</p></div></li>
+          <li data-reveal><span class="journey-step">03</span><div><h3>Improved recall</h3><p>Expanded each question into four retrieval facets, added deterministic Gita vocabulary, and fused BM25 with semantic search using RRF.</p></div></li>
+          <li data-reveal><span class="journey-step">04</span><div><h3>Reworked reranking</h3><p>A local BGE v2-m3 cross-encoder improved relevance but added container weight and latency. It was replaced with Claude evidence reranking and explicit evidence-strength scoring.</p></div></li>
+          <li data-reveal><span class="journey-step">05</span><div><h3>Made grounding inspectable</h3><p>Added weak-evidence fallback, one-to-three-verse citations, claim-level support, limitations, stage timings, and the complete retrieval trace.</p></div></li>
+          <li data-reveal><span class="journey-step">06</span><div><h3>Added a production regression gate</h3><p>GitHub Actions now runs a smoke check and the full 25-case evaluation inside the deployed EKS container after a successful build.</p></div></li>
+        </ol>
+      </section>
       </div>
     </main>
     <footer class="site-footer">
