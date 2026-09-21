@@ -62,7 +62,7 @@ h1, .reflection-copy h2 { font-size: 64px; font-weight: 500; line-height: 1.12; 
 .primary { background: #1d1a16; color: #fdfbf7; }
 .invitation .pill { margin-top: 14px; }
 .scene-spacer { height: 0; }
-.hero { position: relative; color: #fff; justify-content: flex-end; gap: 24px; isolation: isolate; }
+.hero { position: relative; color: #fff; justify-content: flex-end; gap: 24px; }
 .hero::before { display: none; }
 .hero .section-top { display: contents; }
 .hero .section-intro { max-width: 380px; text-align: left; order: 2; font-size: 19px; }
@@ -77,7 +77,7 @@ h1, .reflection-copy h2 { font-size: 64px; font-weight: 500; line-height: 1.12; 
 .hero-heading h1 { font-size: 64px; }
 .hero .scene-topics, .hero-heading, .hero .section-intro { text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 
-.reflection { position: relative; isolation: isolate; padding-top: 72px; padding-bottom: 88px; min-height: 100vh; min-height: 100svh; color: #fff; }
+.reflection { position: relative; padding-top: 72px; padding-bottom: 88px; min-height: 100vh; min-height: 100svh; color: #fff; }
 .reflection::before { display: none; }
 .reflection-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px,7vw,120px); align-items: end; }
 .reflection-copy { max-width: 620px; }
