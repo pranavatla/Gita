@@ -10,7 +10,7 @@
     <title>Gita Reflection — 700 verses. One grounded answer.</title>
 
     <meta name="theme-color" content="#faf6ee" />
-    <meta name="app-version" content="journey-audit-20260921-1" />
+    <meta name="app-version" content="journey-story-20260921-2" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Bhagavad Gita RAG" />
     <meta property="og:title" content="Bhagavad Gita RAG: grounded answers from 700 verses" />
@@ -37,7 +37,7 @@
       rel="stylesheet"
     />
     <link rel="preload" as="image" href="/assets/gita-hero-poster.jpg" />
-    <link rel="stylesheet" href="/assets/gita-scene.css?v=motion-polish-20260921-1" />
+    <link rel="stylesheet" href="/assets/gita-scene.css?v=journey-story-20260921-2" />
   </head>
   <body>
     <div class="scene-backdrop" id="sceneBackdrop" aria-hidden="true">
@@ -464,21 +464,25 @@
       </section>
       </details>
 
-      <section class="journey-section" id="journey" aria-labelledby="journeyTitle">
-        <div class="journey-heading" data-reveal>
-          <p class="panel-label">Build journey</p>
-          <h2 id="journeyTitle">From retrieval demo to evaluated RAG</h2>
-          <p>Each revision addressed a concrete problem in relevance, latency, grounding, or delivery.</p>
+      <details class="journey-section" id="journey">
+        <summary>
+          <span><small>Build journey</small><strong>How a 700-verse experiment became production RAG</strong></span>
+          <svg class="icon disclosure-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 3v10M3 8h10"/></svg>
+        </summary>
+        <div class="journey-body">
+          <header class="journey-intro">
+            <p>The first version could retrieve a verse and generate a reflection. That was enough for a demo, but it was not enough to trust. The work since then has been about finding where the pipeline failed and replacing each weak link with something measurable.</p>
+          </header>
+          <ol class="journey-list">
+            <li><span class="journey-step">01 · The beginning</span><div><h3>One question in, one plausible verse out</h3><p>I started by indexing all 700 Bhagavad Gita verses with Amazon Titan embeddings and using Bedrock to turn a life situation into a response. The system worked, but semantic similarity alone often returned verses that sounded related without directly answering the question.</p></div></li>
+            <li><span class="journey-step">02 · The retrieval problem</span><div><h3>Broader search without losing precision</h3><p>I added four intent facets, deterministic Gita vocabulary, BM25 lexical search, and Reciprocal Rank Fusion. The pipeline now searches the original question and several controlled interpretations, then rewards verses that appear consistently across retrieval methods.</p></div></li>
+            <li><span class="journey-step">03 · The BGE phase</span><div><h3>Better ranking, with the wrong production cost</h3><p>BAAI/bge-reranker-v2-m3 was introduced as a local cross-encoder to compare the strongest candidates. Relevance improved, but model startup, image size, memory use, and latency made it a poor fit for this deployment. Reducing the number of comparisons helped, but did not solve the underlying trade-off.</p></div></li>
+            <li><span class="journey-step">04 · The replacement</span><div><h3>Ranking evidence instead of matching words</h3><p>BGE was removed and replaced with Claude evidence reranking. Claude now ranks six candidates by whether a verse directly supports the user’s situation, records evidence as strong, partial, or none, and limits final generation to the validated passages.</p></div></li>
+            <li><span class="journey-step">05 · The trust layer</span><div><h3>Make every answer inspectable</h3><p>The response now exposes cited verses, claim-level support, missing context, pipeline timings, generated queries, RRF candidates, and the final evidence ranking. When support is weak, the system says so and presents the closest passage instead of manufacturing certainty.</p></div></li>
+            <li class="journey-now"><span class="journey-step">06 · Today</span><div><h3>A deployed and continuously evaluated system</h3><p>The production path runs from GitHub Actions to Docker, ECR, and EKS. After each successful deployment, the workflow executes a five-case smoke test followed by the full 25-case regression suite inside the running container. The result is a RAG system whose retrieval, grounding, latency, and failures can all be examined.</p><div class="journey-outcomes"><span>700 verses</span><span>Hybrid retrieval</span><span>Evidence-ranked</span><span>Citation-grounded</span><span>25-case regression</span></div></div></li>
+          </ol>
         </div>
-        <ol class="journey-list">
-          <li data-reveal><span class="journey-step">01</span><div><h3>Built the foundation</h3><p>Loaded all 700 verses, added Bedrock generation, packaged the service with Docker, and deployed it through ECR to EKS.</p></div></li>
-          <li data-reveal><span class="journey-step">02</span><div><h3>Removed retrieval bottlenecks</h3><p>Moved the production search path to a local cache of precomputed Titan embeddings, keeping the complete corpus ready in memory.</p></div></li>
-          <li data-reveal><span class="journey-step">03</span><div><h3>Improved recall</h3><p>Expanded each question into four retrieval facets, added deterministic Gita vocabulary, and fused BM25 with semantic search using RRF.</p></div></li>
-          <li data-reveal><span class="journey-step">04</span><div><h3>Reworked reranking</h3><p>A local BGE v2-m3 cross-encoder improved relevance but added container weight and latency. It was replaced with Claude evidence reranking and explicit evidence-strength scoring.</p></div></li>
-          <li data-reveal><span class="journey-step">05</span><div><h3>Made grounding inspectable</h3><p>Added weak-evidence fallback, one-to-three-verse citations, claim-level support, limitations, stage timings, and the complete retrieval trace.</p></div></li>
-          <li data-reveal><span class="journey-step">06</span><div><h3>Added a production regression gate</h3><p>GitHub Actions now runs a smoke check and the full 25-case evaluation inside the deployed EKS container after a successful build.</p></div></li>
-        </ol>
-      </section>
+      </details>
       </div>
     </main>
     <footer class="site-footer">
