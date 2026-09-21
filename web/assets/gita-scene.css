@@ -61,9 +61,9 @@ h1, .reflection-copy h2 { font-size: 64px; font-weight: 500; line-height: 1.12; 
 .pill { display: inline-flex; align-items: center; gap: 22px; border-radius: 40px; padding: 12px 20px; font-size: 16px; font-weight: 500; }
 .primary { background: #1d1a16; color: #fdfbf7; }
 .invitation .pill { margin-top: 14px; }
-.scene-spacer { height: 18vh; }
+.scene-spacer { height: 0; }
 .hero { position: relative; color: #fff; justify-content: flex-end; gap: 24px; isolation: isolate; }
-.hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(10,17,13,.92), rgba(10,17,13,.68) 32%, transparent 65%); }
+.hero::before { display: none; }
 .hero .section-top { display: contents; }
 .hero .section-intro { max-width: 380px; text-align: left; order: 2; font-size: 19px; }
 .hero .hero-bottom { display: contents; }
@@ -75,13 +75,15 @@ h1, .reflection-copy h2 { font-size: 64px; font-weight: 500; line-height: 1.12; 
 .hero .scroll-cue { display: none; }
 .hero-heading .hero-kicker { display: block; margin-bottom: 18px; font-size: 20px; font-weight: 400; }
 .hero-heading h1 { font-size: 64px; }
+.hero .scene-topics, .hero-heading, .hero .section-intro { text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 
 .reflection { position: relative; isolation: isolate; padding-top: 72px; padding-bottom: 88px; min-height: 100vh; min-height: 100svh; color: #fff; }
-.reflection::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(10,17,13,.88), rgba(10,17,13,.54) 43%, rgba(10,17,13,.14)); }
+.reflection::before { display: none; }
 .reflection-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px,7vw,120px); align-items: end; }
 .reflection-copy { max-width: 620px; }
 .reflection-description { margin-top: 24px; max-width: 480px; font-size: 19px; color: rgba(255,255,255,.84); }
 .reflection-copy h2 { font-size: 44px; }
+.reflection-copy h2, .reflection-description, .reflection .section-intro, .reflection .glass-badge { text-shadow: 0 1px 3px rgba(0,0,0,.9); }
 .capabilities { margin-top: 30px; border-color: rgba(255,255,255,.2); border-radius: 8px; padding: 4px 22px; background: rgba(8,14,10,.42); backdrop-filter: blur(12px); }
 .capabilities > div { display: flex; gap: 22px; padding: 18px 0; }
 .capabilities > div + div { border-top: 1px solid rgba(255,255,255,.18); }
@@ -250,12 +252,10 @@ code { font-size: 15px; color: rgba(29,26,22,.7); overflow-wrap: anywhere; }
   .hero-heading h1 { font-size: 42px; }
   .reflection-copy h2 { font-size: 36px; }
   .hero { min-height: 860px; min-height: max(780px, 100svh); justify-content: flex-end; gap: 22px; }
-  .hero::before { background: linear-gradient(0deg, rgba(10,17,13,.96), rgba(10,17,13,.85) 45%, rgba(10,17,13,.08) 80%); }
   .hero .scene-topics { font-size: 12px; gap: 6px 14px; }
   .hero .section-intro { font-size: 18px; }
   .hero-heading .hero-kicker { font-size: 17px; margin-bottom: 12px; }
   .reflection { padding-top: 40px; }
-  .reflection::before { background: linear-gradient(0deg, rgba(10,17,13,.94), rgba(10,17,13,.68) 72%, rgba(10,17,13,.22)); }
   .invitation { padding: 16px 18px; }
   .invitation-mark { display: grid; width: 52px; height: 72px; font-size: 22px; }
   .invitation .pill { padding: 10px 16px; font-size: 15px; }
