@@ -38,7 +38,17 @@
     />
     <link rel="preload" as="image" href="/assets/gita-hero-poster.jpg" />
     <link rel="stylesheet" href="/assets/gita-scene.css?v=impeccable-audit-20260921-1" />
-  </head>
+    <!-- CloudWatch RUM: page-load timing, web vitals and browser errors from real visitors, shown on
+       obs.atla.in. The app monitor ID is public by design: the monitor accepts events only from gita.atla.in. -->
+  <script>
+    (function () {
+      if (location.hostname !== "gita.atla.in") return;
+      (function (n, i, v, r, s, c, x, z) { x = window.AwsRumClient = { q: [], n: n, i: i, v: v, r: r, c: c }; window[n] = function (c, p) { x.q.push({ c: c, p: p }); }; z = document.createElement("script"); z.async = true; z.src = s; document.head.insertBefore(z, document.head.getElementsByTagName("script")[0]); })(
+        "cwr", "be56ac7c-74b1-4166-ae38-57e5b35deca3", "1.0.0", "us-east-1", "https://client.rum.us-east-1.amazonaws.com/1.x/cwr.js",
+        { sessionSampleRate: 1, endpoint: "https://dataplane.rum.us-east-1.amazonaws.com", telemetries: ["performance", "errors", "http"], allowCookies: false, enableXRay: false, signing: false });
+    })();
+  </script>
+</head>
   <body>
     <div class="scene-backdrop" id="sceneBackdrop" aria-hidden="true">
       <img class="scene-poster" src="/assets/gita-hero-poster.jpg" alt="" fetchpriority="high" />
